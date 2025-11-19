@@ -152,18 +152,6 @@ public final class Utilities {
     @IntDef({TRANSLATE_UP, TRANSLATE_DOWN, TRANSLATE_LEFT, TRANSLATE_RIGHT})
     public @interface AdjustmentDirection{}
 
-    public static final String GSA_PACKAGE = "com.google.android.googlequicksearchbox";
-    public static final String LENS_SHARE_ACTIVITY = "com.google.android.apps.search.lens.LensShareEntryPointActivity";
-
-    public static final String KEY_WORKSPACE_LOCK = "pref_workspace_lock";
-    public static final String KEY_DRAWER_OPEN_KEYBOARD = "pref_drawer_open_keyboard";
-    public static final String KEY_SHOW_HOTSEAT_BG = "pref_show_hotseat_bg";
-    public static final String KEY_ALLOW_WALLPAPER_ZOOMING = "pref_allow_wallpaper_zooming";
-    public static final String KEY_STATUS_BAR = "pref_show_statusbar";
-    public static final String KEY_BLUR_DEPTH = "pref_blur_depth";
-    public static final String KEY_APP_DRAWER_OPACITY = "pref_app_drawer_opacity";
-    public static final String KEY_RECENTS_OPACITY = "pref_recents_opacity";
-
     /**
      * Returns true if theme is dark.
      */
