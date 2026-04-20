@@ -45,4 +45,9 @@
     <string name="trust_apps_relock_1_minute">Через 1 минуту</string>
     <string name="trust_apps_info_hidden">Скрытые приложения и их виджеты не отображаются в меню приложений</string>
     <string name="trust_apps_info_protected">Для открытия защищенных приложений всегда требуется аутентификация, их уведомления скрываются, а в недавних приложениях они показываются заблокированными</string>
+    <!-- Custom grid -->
+    <string name="homescreen_columns">Установить количество столбцов на главном экране</string>
+    <string name="homescreen_rows">Установить количество строк на главном экране</string>
+    <string name="homescreen_columns_summary">Столбцов: %s</string>
+    <string name="homescreen_rows_summary">Строк: %s</string>
 </resources>

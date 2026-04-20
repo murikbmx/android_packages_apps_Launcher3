@@ -96,4 +96,20 @@
         android:key="pref_trust_apps"
         android:title="@string/trust_apps_manager_name" />
 
+    <ListPreference
+        android:key="custom_grid_rows"
+        android:title="@string/homescreen_rows"
+        android:summary="@string/homescreen_rows_summary"
+        android:entries="@array/grid_size_entries"
+        android:entryValues="@array/grid_size_values"
+        android:defaultValue="5" />
+
+    <ListPreference
+        android:key="custom_grid_cols"
+        android:title="@string/homescreen_columns"
+        android:summary="@string/homescreen_columns_summary"
+        android:entries="@array/grid_size_entries"
+        android:entryValues="@array/grid_size_values"
+        android:defaultValue="5" />
+
 </androidx.preference.PreferenceScreen>

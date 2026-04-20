@@ -83,4 +83,10 @@
     <string name="trust_apps_relock_1_minute">After 1 minute</string>
     <string name="trust_apps_info_hidden">Hidden apps and their widgets are hidden from the drawer</string>
     <string name="trust_apps_info_protected">Protected apps require authentication whenever they are opened, their notifications are hidden and they are shown locked in Recents</string>
+
+    <!-- Custom grid -->
+    <string name="homescreen_columns">Set the amount of home screen columns</string>
+    <string name="homescreen_rows">Set the amount of home screen rows</string>
+    <string name="homescreen_columns_summary">%s columns</string>
+    <string name="homescreen_rows_summary">%s rows</string>
 </resources>
