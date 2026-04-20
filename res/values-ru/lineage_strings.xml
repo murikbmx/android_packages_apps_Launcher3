@@ -39,4 +39,7 @@
     <string name="trust_apps_info_protected">Для открытия защищенных приложений из лаунчера требуется аутентификация</string>
     <string name="pref_suggestions_title">Предложения</string>
     <string name="pref_suggestions_summary">Для панели приложений и предложений на главном экране</string>
+    <!-- Custom grid -->
+    <string name="homescreen_columns">Установить количество столбцов на главном экране</string>
+    <string name="homescreen_rows">Установить количество строк на главном экране</string>
 </resources>
