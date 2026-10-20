@@ -28,6 +28,7 @@ import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.security.Flags;
 import android.util.Log;
 import android.view.Menu;
@@ -67,6 +68,8 @@ public class TrustAppsActivity extends Activity implements
     private static final String TAG = "TrustAppsActivity";
     private static final String KEY_TRUST_ONBOARDING = "pref_trust_onboarding";
     private static final int REQUEST_APP_LOCK = 1;
+    // How long an app stays unlocked after leaving it, the second one is the system default.
+    private static final long[] RELOCK_DELAYS_MS = {0, 5_000, 30_000, 60_000};
 
     private RecyclerView mRecyclerView;
     private LinearLayout mLoadingView;
@@ -108,6 +111,7 @@ public class TrustAppsActivity extends Activity implements
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = getMenuInflater();
         menuInflater.inflate(R.menu.menu_trust_apps, menu);
+        menu.findItem(R.id.menu_trust_relock).setVisible(Flags.appLockApis());
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -119,6 +123,9 @@ public class TrustAppsActivity extends Activity implements
             return true;
         } else if (id == R.id.menu_trust_help) {
             showOnBoarding(true);
+            return true;
+        } else if (id == R.id.menu_trust_relock) {
+            showRelockDialog();
             return true;
         } else {
             return super.onOptionsItemSelected(item);
@@ -197,6 +204,32 @@ public class TrustAppsActivity extends Activity implements
             Log.e(TAG, "Failed to start App Lock intent", e);
             loadList();
         }
+    }
+
+    private void showRelockDialog() {
+        final String[] entries = {
+                getString(R.string.trust_apps_relock_immediately),
+                getString(R.string.trust_apps_relock_5_seconds),
+                getString(R.string.trust_apps_relock_30_seconds),
+                getString(R.string.trust_apps_relock_1_minute),
+        };
+        final long current = Settings.Secure.getLong(getContentResolver(),
+                Settings.Secure.APP_LOCK_GRACE_PERIOD, RELOCK_DELAYS_MS[1]);
+        int checked = 1;
+        for (int i = 0; i < RELOCK_DELAYS_MS.length; i++) {
+            if (RELOCK_DELAYS_MS[i] == current) {
+                checked = i;
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.trust_apps_relock_title)
+                .setSingleChoiceItems(entries, checked, (dialog, which) -> {
+                    Settings.Secure.putLong(getContentResolver(),
+                            Settings.Secure.APP_LOCK_GRACE_PERIOD, RELOCK_DELAYS_MS[which]);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void loadList() {
