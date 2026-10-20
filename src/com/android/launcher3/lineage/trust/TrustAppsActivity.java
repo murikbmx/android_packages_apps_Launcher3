@@ -20,9 +20,16 @@ import static com.android.launcher3.lineage.trust.db.TrustComponent.Kind.PROTECT
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.security.Flags;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -48,6 +55,7 @@ import com.android.launcher3.R;
 import com.android.launcher3.lineage.LineageUtils;
 import com.android.launcher3.lineage.trust.db.TrustComponent;
 import com.android.launcher3.lineage.trust.db.TrustDatabaseHelper;
+import com.android.launcher3.util.Executors;
 
 import java.util.List;
 
@@ -56,7 +64,9 @@ public class TrustAppsActivity extends Activity implements
         LoadTrustComponentsTask.Callback,
         UpdateItemTask.UpdateCallback {
 
+    private static final String TAG = "TrustAppsActivity";
     private static final String KEY_TRUST_ONBOARDING = "pref_trust_onboarding";
+    private static final int REQUEST_APP_LOCK = 1;
 
     private RecyclerView mRecyclerView;
     private LinearLayout mLoadingView;
@@ -91,8 +101,7 @@ public class TrustAppsActivity extends Activity implements
 
         showOnBoarding(false);
 
-        final AppFilter appFilter = new AppFilter(this);
-        new LoadTrustComponentsTask(mDbHelper, getPackageManager(), appFilter, this).execute();
+        loadList();
     }
 
     @Override
@@ -123,7 +132,76 @@ public class TrustAppsActivity extends Activity implements
 
     @Override
     public void onProtectedItemChanged(@NonNull TrustComponent component) {
-        new UpdateItemTask(mDbHelper, this, PROTECTED).execute(component);
+        final String pkgName = component.getPackageName();
+        final boolean protect = component.isProtected();
+        if (!isAppLockSupported(pkgName)) {
+            new UpdateItemTask(mDbHelper, this, PROTECTED).execute(component);
+            return;
+        }
+
+        // App Lock replaces the launcher-side protection, so drop the legacy entry and let
+        // the system authenticate the user before it changes the App Lock state.
+        if (!protect) {
+            new UpdateItemTask(mDbHelper, this, PROTECTED).execute(component);
+        }
+        Executors.ORDERED_BG_EXECUTOR.execute(() -> {
+            PendingIntent pendingIntent = null;
+            try {
+                pendingIntent = getPackageManager()
+                        .getEnableAppLockIntentForPackage(pkgName, protect);
+            } catch (SecurityException e) {
+                Log.e(TAG, "Failed to get App Lock intent for " + pkgName, e);
+            }
+            final PendingIntent result = pendingIntent;
+            runOnUiThread(() -> startAppLockIntent(result));
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_APP_LOCK) {
+            // The user may have cancelled the authentication, show the actual state.
+            loadList();
+        }
+    }
+
+    private boolean isAppLockSupported(@NonNull String pkgName) {
+        if (!Flags.appLockApis()) {
+            return false;
+        }
+        try {
+            return getPackageManager().getApplicationInfo(pkgName,
+                    PackageManager.ApplicationInfoFlags.of(PackageManager.GET_APP_LOCK_INFO))
+                    .isAppLockSupported;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    private void startAppLockIntent(@Nullable PendingIntent pendingIntent) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        if (pendingIntent == null) {
+            loadList();
+            return;
+        }
+        try {
+            startIntentSenderForResult(pendingIntent.getIntentSender(), REQUEST_APP_LOCK,
+                    null, 0, 0, 0, ActivityOptions.makeBasic()
+                            .setPendingIntentBackgroundActivityStartMode(
+                                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                            .toBundle());
+        } catch (IntentSender.SendIntentException e) {
+            Log.e(TAG, "Failed to start App Lock intent", e);
+            loadList();
+        }
+    }
+
+    private void loadList() {
+        new LoadTrustComponentsTask(mDbHelper, getPackageManager(), new AppFilter(this), this)
+                .execute();
     }
 
     @Override

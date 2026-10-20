@@ -432,7 +432,12 @@ public class ItemClickHandler {
 
         TrustDatabaseHelper db = TrustDatabaseHelper.getInstance(launcher);
         ComponentName cn = item.getTargetComponent();
-        boolean isProtected = cn != null && db.isPackageProtected(cn.getPackageName());
+        // Apps locked by the system App Lock are authenticated by the system on any launch path,
+        // so the launcher only guards the apps it protects itself.
+        boolean isAppLocked = item instanceof ItemInfoWithIcon
+                && ((ItemInfoWithIcon) item).isAppLockEnabled();
+        boolean isProtected = cn != null && !isAppLocked
+                && db.isPackageProtected(cn.getPackageName());
 
         if (isProtected) {
             launcher.startActivitySafelyAuth(v, intent, item);
