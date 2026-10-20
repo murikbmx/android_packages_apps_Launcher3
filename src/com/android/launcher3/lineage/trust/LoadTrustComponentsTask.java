@@ -16,11 +16,13 @@
 package com.android.launcher3.lineage.trust;
 
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.security.Flags;
 
 import androidx.annotation.NonNull;
 
@@ -75,12 +77,15 @@ public class LoadTrustComponentsTask extends AsyncTask<Void, Integer, List<Trust
 
             try {
                 String pkgName = app.activityInfo.packageName;
-                String label = mPackageManager.getApplicationLabel(
-                        mPackageManager.getApplicationInfo(pkgName,
-                                PackageManager.GET_META_DATA)).toString();
+                // The App Lock state is only filled in when it's requested.
+                ApplicationInfo appInfo = mPackageManager.getApplicationInfo(pkgName,
+                        PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA
+                                | (Flags.appLockApis() ? PackageManager.GET_APP_LOCK_INFO : 0)));
+                String label = mPackageManager.getApplicationLabel(appInfo).toString();
                 Drawable icon = app.loadIcon(mPackageManager);
                 boolean isHidden = mDbHelper.isPackageHidden(pkgName);
-                boolean isProtected = mDbHelper.isPackageProtected(pkgName);
+                boolean isProtected = mDbHelper.isPackageProtected(pkgName)
+                        || (Flags.appLockApis() && appInfo.isAppLockEnabled);
 
                 list.add(new TrustComponent(pkgName, icon, label, isHidden, isProtected));
 

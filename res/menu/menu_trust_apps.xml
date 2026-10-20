@@ -20,4 +20,8 @@
         android:icon="@drawable/ic_help"
         android:showAsAction="always"
         android:title="@string/trust_apps_help" />
+    <item
+        android:id="@+id/menu_trust_relock"
+        android:showAsAction="never"
+        android:title="@string/trust_apps_relock_title" />
 </menu>

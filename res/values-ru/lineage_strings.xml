@@ -37,6 +37,11 @@
     <string name="trust_apps_loading">Загрузка\u2026</string>
     <string name="trust_apps_no_lock_error">Пожалуйста, установите блокировку экрана для ограничения доступа к приложениям</string>
     <string name="trust_apps_help">Помощь</string>
+    <string name="trust_apps_relock_title">Повторная блокировка</string>
+    <string name="trust_apps_relock_immediately">Сразу</string>
+    <string name="trust_apps_relock_5_seconds">Через 5 секунд (по умолчанию)</string>
+    <string name="trust_apps_relock_30_seconds">Через 30 секунд</string>
+    <string name="trust_apps_relock_1_minute">Через 1 минуту</string>
     <string name="trust_apps_info_hidden">Скрытые приложения и их виджеты не отображаются в меню приложений</string>
-    <string name="trust_apps_info_protected">Для открытия защищенных приложений из лаунчера требуется аутентификация</string>
+    <string name="trust_apps_info_protected">Для открытия защищенных приложений всегда требуется аутентификация, их уведомления скрываются, а в недавних приложениях они показываются заблокированными</string>
 </resources>
