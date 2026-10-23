@@ -131,6 +131,11 @@ public class GridCustomizationsProxy implements ProxyProvider {
     private static final String SET_ICON_THEMED = "/set_icon_themed";
     public static final String ICON_THEMED = "/icon_themed";
 
+    // "Full minimalism": also theme the app drawer (and, via recents, the task icons).
+    private static final String GET_ICON_THEMED_ALL = "/get_icon_themed_all";
+    private static final String SET_ICON_THEMED_ALL = "/set_icon_themed_all";
+    public static final String ICON_THEMED_ALL = "/icon_themed_all";
+
     private static final String GET_WORKSPACE_ITEMS_LABEL_HIDDEN =
             "/get_workspace_items_label_hidden";
     private static final String SET_WORKSPACE_ITEMS_LABEL_HIDDEN =
@@ -254,6 +259,13 @@ public class GridCustomizationsProxy implements ProxyProvider {
                 Log.d(TAG, "query: path=" + path + ", isMonoThemeEnabled=" + monoThemeEnabled);
                 return cursor;
             }
+            case GET_ICON_THEMED_ALL:
+            case ICON_THEMED_ALL: {
+                MatrixCursor cursor = new MatrixCursor(new String[]{BOOLEAN_VALUE});
+                cursor.newRow().add(BOOLEAN_VALUE,
+                        mPrefs.get(LauncherPrefs.ALLAPPS_THEMED_ICONS) ? 1 : 0);
+                return cursor;
+            }
             case GET_WORKSPACE_ITEMS_LABEL_HIDDEN:
             case WORKSPACE_ITEMS_LABEL_HIDDEN:
                 if (!com.android.systemui.shared.Flags.workspaceItemsLabelHidden()) {
@@ -325,6 +337,12 @@ public class GridCustomizationsProxy implements ProxyProvider {
                 } else {
                     mThemePreference.setValue(null, MONO_THEME_VALUE::equals);
                 }
+                return UPDATE_SETTING_SUCCESS;
+            }
+            case ICON_THEMED_ALL:
+            case SET_ICON_THEMED_ALL: {
+                mPrefs.put(LauncherPrefs.ALLAPPS_THEMED_ICONS,
+                        Boolean.TRUE.equals(values.getAsBoolean(BOOLEAN_VALUE)));
                 return UPDATE_SETTING_SUCCESS;
             }
             case SET_WORKSPACE_ITEMS_LABEL_HIDDEN: {
