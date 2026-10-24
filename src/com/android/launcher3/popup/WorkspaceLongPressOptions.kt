@@ -21,9 +21,11 @@ import android.content.Intent
 import android.text.TextUtils
 import android.view.View
 import android.widget.Toast
+import com.android.launcher3.AbstractFloatingView
 import com.android.launcher3.BuildConfig
 import com.android.launcher3.Flags
 import com.android.launcher3.Launcher
+import com.android.launcher3.LauncherPrefs
 import com.android.launcher3.LauncherSettings.Favorites
 import com.android.launcher3.LauncherState
 import com.android.launcher3.R
@@ -32,7 +34,6 @@ import com.android.launcher3.config.FeatureFlags
 import com.android.launcher3.homescreenfiles.HomeScreenFilesProvider
 import com.android.launcher3.homescreenfiles.HomeScreenFilesUpdate.Extras.Companion.builder
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent.IGNORE
-import com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_ALL_APPS_TAP_OR_LONGPRESS
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_CREATE_NEW_FOLDER_BUTTON_TAP_OR_LONGPRESS
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_SETTINGS_BUTTON_TAP_OR_LONGPRESS
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_WIDGETSTRAY_BUTTON_TAP_OR_LONGPRESS
@@ -87,17 +88,18 @@ object WorkspaceLongPressOptions {
             )
         }
 
+        // Shown in both states so the layout can always be unlocked again from here
+        val isLayoutLocked = LauncherPrefs.WORKSPACE_LOCK.get(ctx)
         add(
             PopupData(
-                R.drawable.ic_apps,
-                R.string.all_apps_button_label,
+                if (isLayoutLocked) R.drawable.ic_layout_unlock else R.drawable.ic_layout_lock,
+                if (isLayoutLocked) R.string.unlock_layout_button_text
+                else R.string.settings_lock_layout_title,
                 SYSTEM_SHORTCUT,
-                LAUNCHER_ALL_APPS_TAP_OR_LONGPRESS,
+                IGNORE,
             ) { ac, _, _ ->
-                (ac as? Launcher)?.apply {
-                    activityComponent.keyboardStateManager.launchedFromA11y = true
-                    stateManager.goToState(LauncherState.ALL_APPS)
-                }
+                LauncherPrefs.get(ac.asContext()).put(LauncherPrefs.WORKSPACE_LOCK, !isLayoutLocked)
+                AbstractFloatingView.closeAllOpenViews(ac)
             }
         )
 

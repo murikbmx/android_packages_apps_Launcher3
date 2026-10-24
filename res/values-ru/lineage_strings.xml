@@ -21,6 +21,7 @@
     <string name="settings_lock_layout_title">Блокировка макета</string>
     <string name="settings_lock_layout_summary_on">Иконки и виджеты не могут быть добавлены, удалены и перемещены на главный экран</string>
     <string name="settings_lock_layout_summary_off">Иконки и виджеты могут быть добавлены, удалены и перемещены на главный экран</string>
+    <string name="unlock_layout_button_text">Разблокировать макет</string>
     <string name="settings_edit_widgets_error">Невозможно добавить виджеты на главный экран</string>
     <string name="desktop_show_labels">Отображать подписи значков на рабочем столе</string>
     <string name="drawer_show_labels">Отображать подписи значков в меню</string>
