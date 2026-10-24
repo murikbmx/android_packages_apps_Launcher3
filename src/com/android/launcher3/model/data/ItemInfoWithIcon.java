@@ -378,9 +378,8 @@ public abstract class ItemInfoWithIcon extends ItemInfo {
      * Returns true if the current BitmapInfo can support cropping to custom icon shapes.
      */
     public boolean supportsCustomShapes(@DrawableCreationFlags int creationFlags) {
-        return Flags.enableLauncherIconShapes()
-                && (creationFlags & FLAG_THEMED) != 0
-                && bitmap.isFullBleed();
+        // Apply the selected shape to non-themed icons too, so app drawer icons follow it
+        return Flags.enableLauncherIconShapes() && bitmap.isFullBleed();
     }
 
     /**
