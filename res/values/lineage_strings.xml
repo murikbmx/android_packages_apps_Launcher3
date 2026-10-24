@@ -47,6 +47,8 @@
     <string name="rename_app">Rename</string>
     <string name="reset_app_title">Reset name</string>
     <string name="rename_app_dialog_title">Rename app</string>
+    <string name="hide_app">Hide</string>
+    <string name="hide_app_done">App hidden. You can show it again in Hidden &amp; Protected apps</string>
     <string name="settings_edit_widgets_error">It\'s not possible to add widgets to the home screen</string>
 
     <!-- Hide labels -->
