@@ -301,12 +301,15 @@ private constructor(
         systemShortcutContainer = inflateAndAdd(systemShortcutContainerLayout, this)
         widgetContainer = systemShortcutContainer
         for (i in systemShortcuts.indices) {
-            initializeSystemShortcut(
-                systemShortcutLayout,
-                systemShortcutContainer,
-                systemShortcuts[i],
-                i < systemShortcuts.size - 1,
-            )
+            val view =
+                initializeSystemShortcut(
+                    systemShortcutLayout,
+                    systemShortcutContainer,
+                    systemShortcuts[i],
+                    i < systemShortcuts.size - 1,
+                )
+            // Match the width of the other containers, which grows with the icons row
+            if (view is DeepShortcutView) view.layoutParams.width = containerWidth
         }
     }
 
