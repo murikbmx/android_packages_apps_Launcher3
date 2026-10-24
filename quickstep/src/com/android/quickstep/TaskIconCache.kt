@@ -33,6 +33,7 @@ import com.android.launcher3.display.LauncherDisplayInfo
 import com.android.launcher3.graphics.ThemeManager
 import com.android.launcher3.icons.BaseIconFactory.IconOptions
 import com.android.launcher3.icons.BitmapInfo
+import com.android.launcher3.icons.BitmapInfo.Companion.FLAG_THEMED
 import com.android.launcher3.icons.IconCache
 import com.android.launcher3.icons.cache.AppInfoCachingLogic
 import com.android.launcher3.pm.UserCache
@@ -61,7 +62,7 @@ constructor(
     @ApplicationContext private val context: Context,
     displayController: DisplayController,
     private val dispatcherProvider: DispatcherProvider,
-    themeManagerWrapper: PostUnlockObject<ThemeManager>,
+    private val themeManagerWrapper: PostUnlockObject<ThemeManager>,
     private val launcherIconCache: PostUnlockObject<IconCache>,
     @Ui private val uiExecutor: Executor,
     daggerSingletonTracker: DaggerSingletonTracker,
@@ -91,11 +92,19 @@ constructor(
         themeManagerWrapper.whenAvailable(uiExecutor) { themeManager ->
             val themeChangeListener = ThemeManager.ThemeChangeListener { clearCache() }
             themeManager.addChangeListener(themeChangeListener)
+            // Icons loaded before unlock were created without theming, drop them.
+            if (themeManager.isIconThemeEnabled) clearCache()
 
             Runnable { themeManager.removeChangeListener(themeChangeListener) }
         }
         daggerSingletonTracker.addCloseable(themeManagerWrapper)
     }
+
+    /** Recents task icons are themed (monochrome) when themed icons are enabled. */
+    private fun shouldUseTheme(): Boolean =
+        themeManagerWrapper.getIfReady()?.isIconThemeEnabled == true
+
+    private fun taskIconFlags(): Int = if (shouldUseTheme()) FLAG_THEMED else 0
 
     private fun onDisplayInfoChanged(flags: Int) {
         if ((flags and LauncherDisplayInfo.CHANGE_DENSITY) != 0) {
@@ -111,18 +120,18 @@ constructor(
 
         // Return from cache if present
         bitmapInfoCache.getAndInvalidateIfModified(task.key)?.let {
-            return it.toTaskCacheEntry(context)
+            return it.toTaskCacheEntry(context, taskIconFlags())
         }
 
         return withContext(dispatcherProvider.ioBackground) {
             val entry =
                 getBitmapInfoCacheEntry(task)
                     .apply {
-                        task.icon = bitmapInfo.newIcon(context)
+                        task.icon = bitmapInfo.newIcon(context, taskIconFlags())
                         task.titleDescription = contentDescription
                         task.title = title
                     }
-                    .toTaskCacheEntry(context)
+                    .toTaskCacheEntry(context, taskIconFlags())
             dispatchIconUpdate(task.key.id)
             return@withContext entry
         }
@@ -151,7 +160,7 @@ constructor(
             bitmapInfo,
             title,
             contentDescription ->
-            val icon = bitmapInfo.newIcon(context)
+            val icon = bitmapInfo.newIcon(context, taskIconFlags())
             task.icon = icon
             callback.onTaskIconReceived(icon, title, contentDescription)
         }
@@ -254,8 +263,9 @@ constructor(
 
         val user = UserHandle.of(key.userId)
 
-        // Load icon
-        val icon = getIcon(desc, key.userId)
+        // Load icon. When themed, skip the task's own bitmap (it has no monochrome layer) and use
+        // the activity's adaptive icon below instead.
+        val icon = if (shouldUseTheme()) null else getIcon(desc, key.userId)
         val userInfo = UserCache.INSTANCE.get(context).getUserInfo(user)
 
         if (icon != null) {
@@ -304,8 +314,8 @@ constructor(
         val contentDescription: String = "",
         val title: String = "",
     ) {
-        fun toTaskCacheEntry(context: Context): TaskCacheEntry {
-            return TaskCacheEntry(bitmapInfo.newIcon(context), contentDescription, title)
+        fun toTaskCacheEntry(context: Context, flags: Int): TaskCacheEntry {
+            return TaskCacheEntry(bitmapInfo.newIcon(context, flags), contentDescription, title)
         }
     }
 
