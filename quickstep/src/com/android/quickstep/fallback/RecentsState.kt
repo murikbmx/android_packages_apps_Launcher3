@@ -74,8 +74,12 @@ open class RecentsState(@JvmField val ordinal: Int, private val mFlags: Int) :
 
     fun isFullScreen() = hasFlag(FLAG_FULL_SCREEN)
 
-    /** For this state, whether clear all button should be shown. */
-    fun hasClearAllButton() = false
+    /**
+     * For this state, whether clear all button should be shown. Phones use the clear all button in
+     * the overview actions instead.
+     */
+    fun hasClearAllButton(dp: DeviceProfile) =
+        hasFlag(FLAG_CLEAR_ALL_BUTTON) && !dp.deviceProperties.isPhone
 
     /** For this state, whether add desk button should be shown. */
     fun hasAddDeskButton() = hasFlag(FLAG_ADD_DESK_BUTTON)

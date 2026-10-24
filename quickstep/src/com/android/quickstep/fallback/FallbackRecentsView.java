@@ -296,7 +296,7 @@ public abstract class FallbackRecentsView<CONTAINER_TYPE extends Context & Recen
         super.setOverviewStateEnabled(enabled);
         if (enabled) {
             RecentsState state = mContainer.getStateManager().getState();
-            setDisallowScrollToClearAll(!state.hasClearAllButton());
+            setDisallowScrollToClearAll(!state.hasClearAllButton(mContainer.getDeviceProfile()));
         }
     }
 
