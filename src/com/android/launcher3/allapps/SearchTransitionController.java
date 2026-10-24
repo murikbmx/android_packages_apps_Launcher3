@@ -16,6 +16,7 @@
 
 package com.android.launcher3.allapps;
 
+import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 
 import static com.android.app.animation.Interpolators.DECELERATE_1_7;
@@ -67,9 +68,11 @@ public class SearchTransitionController extends RecyclerViewAnimationController 
             }));
         }
         mAllAppsContainerView.getFloatingHeaderView().setFloatingRowsCollapsed(true);
-        mAllAppsContainerView.getFloatingHeaderView().setVisibility(VISIBLE);
-        mAllAppsContainerView.getFloatingHeaderView().maybeSetTabVisibility(VISIBLE);
-        mAllAppsContainerView.getAppsRecyclerViewContainer().setVisibility(VISIBLE);
+        // Hide A-Z apps while going to search so taps can't land on apps behind the results.
+        int azVisibility = goingToSearch ? GONE : VISIBLE;
+        mAllAppsContainerView.getFloatingHeaderView().setVisibility(azVisibility);
+        mAllAppsContainerView.getFloatingHeaderView().maybeSetTabVisibility(azVisibility);
+        mAllAppsContainerView.getAppsRecyclerViewContainer().setVisibility(azVisibility);
         getRecyclerView().setVisibility(VISIBLE);
     }
 
