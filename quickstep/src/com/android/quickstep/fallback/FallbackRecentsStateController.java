@@ -99,7 +99,8 @@ public class FallbackRecentsStateController implements StateHandler<RecentsState
             PropertySetter setter) {
         setter.setFloat(mRecentsView, CONTENT_ALPHA, state.isRecentsViewVisible() ? 1f : 0f,
                 config.getInterpolator(ANIM_OVERVIEW_FADE, AGGRESSIVE_EASE_IN_OUT));
-        float clearAllButtonAlpha = state.hasClearAllButton() ? 1 : 0;
+        float clearAllButtonAlpha =
+                state.hasClearAllButton(mRecentsViewContainer.getDeviceProfile()) ? 1 : 0;
         setter.setFloat(mRecentsView.getClearAllButton(),
                 ClearAllButton.VISIBILITY_ALPHA, clearAllButtonAlpha, LINEAR);
         if (mRecentsView.getAddDeskButton() != null) {

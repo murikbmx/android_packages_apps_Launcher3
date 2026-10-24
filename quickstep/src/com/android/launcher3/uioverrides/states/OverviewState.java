@@ -133,6 +133,10 @@ public class OverviewState extends LauncherState {
         if (showFloatingSearch) {
             elements |= FLOATING_SEARCH_BAR;
         }
+        // Phones use the clear all button in the overview actions, tablets keep the native one
+        if (!dp.getDeviceProperties().isPhone()) {
+            elements |= CLEAR_ALL_BUTTON;
+        }
         if (launcherUiState.getSplitScreenUiState().isSplitSelectActive()) {
             elements &= ~CLEAR_ALL_BUTTON & ~ADD_DESK_BUTTON;
         }
