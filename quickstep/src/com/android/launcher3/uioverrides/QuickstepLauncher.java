@@ -152,6 +152,7 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.model.data.PredictedContainerInfo;
 import com.android.launcher3.popup.AppTitleShortcuts;
+import com.android.launcher3.popup.DrawerAppShortcuts;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.proxy.ProxyActivityStarter;
 import com.android.launcher3.statehandlers.DesktopVisibilityController;
@@ -566,6 +567,8 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
         }
         shortcuts.add(AppTitleShortcuts.RENAME_APP);
         shortcuts.add(AppTitleShortcuts.RESET_APP_TITLE);
+        shortcuts.add(DrawerAppShortcuts.HIDE_APP);
+        shortcuts.add(DrawerAppShortcuts.UNINSTALL_APP);
         return shortcuts.stream();
     }
 
