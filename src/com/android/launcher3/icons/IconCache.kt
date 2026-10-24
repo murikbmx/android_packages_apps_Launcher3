@@ -68,6 +68,7 @@ import com.android.launcher3.shortcuts.ShortcutRequest
 import com.android.launcher3.util.ApplicationInfoWrapper
 import com.android.launcher3.util.CancellableTask
 import com.android.launcher3.util.ComponentKey
+import com.android.launcher3.util.CustomAppTitles
 import com.android.launcher3.util.DaggerSingletonTracker
 import com.android.launcher3.util.Executors
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
@@ -588,6 +589,15 @@ constructor(
             // TODO: entry.bitmap can never be null, so this should not happen at all.
             Log.wtf(TAG, "Cannot find bitmap from the cache, default icon was loaded.")
             info.bitmap = getDefaultIcon(info.user)
+        }
+
+        // apply the title the user gave to the app
+        val component = info.targetComponent
+        if (info.itemType == Favorites.ITEM_TYPE_APPLICATION && component != null) {
+            CustomAppTitles.get(context, component, info.user)?.let {
+                info.title = it
+                info.contentDescription = getUserBadgedLabel(it, info.user)
+            }
         }
 
         // apply package override

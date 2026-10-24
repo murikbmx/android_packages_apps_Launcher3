@@ -38,6 +38,7 @@ import com.android.launcher3.icons.IconCache
 import com.android.launcher3.icons.cache.AppInfoCachingLogic
 import com.android.launcher3.pm.UserCache
 import com.android.launcher3.util.CancellableTask
+import com.android.launcher3.util.CustomAppTitles
 import com.android.launcher3.util.DaggerSingletonTracker
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.Executors.SimpleThreadFactory
@@ -98,6 +99,9 @@ constructor(
             Runnable { themeManager.removeChangeListener(themeChangeListener) }
         }
         daggerSingletonTracker.addCloseable(themeManagerWrapper)
+        daggerSingletonTracker.addCloseable(
+            CustomAppTitles.addChangeListener(context) { clearCache() }
+        )
     }
 
     /** Recents task icons are themed (monochrome) when themed icons are enabled. */
@@ -245,10 +249,18 @@ constructor(
                         task.key.userId,
                         task.taskDescription,
                     ),
-                    Utilities.trim(activityInfo.loadLabel(context.packageManager)),
+                    getCustomTitle(task)
+                        ?: Utilities.trim(activityInfo.loadLabel(context.packageManager)),
                 )
             })
             .also { bitmapInfoCache.put(task.key, it) }
+    }
+
+    /** Returns the title the user gave to the task's app, if any. */
+    private fun getCustomTitle(task: Task): String? {
+        val user = UserHandle.of(task.key.userId)
+        return CustomAppTitles.get(context, task.key.component, user)
+            ?: CustomAppTitles.getForPackage(context, task.key.packageName, user)
     }
 
     private fun getIcon(desc: ActivityManager.TaskDescription, userId: Int): Bitmap? =
