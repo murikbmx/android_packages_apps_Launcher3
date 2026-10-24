@@ -24,10 +24,8 @@ import android.os.UserHandle
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import androidx.core.graphics.drawable.toDrawable
-import com.android.launcher3.LauncherPrefs
 import com.android.launcher3.R
 import com.android.launcher3.Utilities
-import com.android.launcher3.icons.BitmapInfo.Companion.FLAG_THEMED
 import com.android.launcher3.concurrent.annotations.Ui
 import com.android.launcher3.dagger.ApplicationContext
 import com.android.launcher3.display.DisplayController
@@ -120,7 +118,7 @@ constructor(
             val entry =
                 getBitmapInfoCacheEntry(task)
                     .apply {
-                        task.icon = bitmapInfo.newIcon(context, taskIconFlags())
+                        task.icon = bitmapInfo.newIcon(context)
                         task.titleDescription = contentDescription
                         task.title = title
                     }
@@ -153,18 +151,11 @@ constructor(
             bitmapInfo,
             title,
             contentDescription ->
-            val icon = bitmapInfo.newIcon(context, taskIconFlags())
+            val icon = bitmapInfo.newIcon(context)
             task.icon = icon
             callback.onTaskIconReceived(icon, title, contentDescription)
         }
     }
-
-    /**
-     * Theme the Recents task icons as well when "full minimalism" is selected (the launcher's
-     * all-apps themed icons preference), so Recents matches the home screen and app drawer.
-     */
-    private fun taskIconFlags(): Int =
-        if (LauncherPrefs.ALLAPPS_THEMED_ICONS.get(context)) FLAG_THEMED else 0
 
     /**
      * Asynchronously fetches the icon [BitmapInfo] and other [task] data, returned through
@@ -263,12 +254,8 @@ constructor(
 
         val user = UserHandle.of(key.userId)
 
-        // Load icon. For "full minimalism" (themed all-apps icons), skip the task's raw bitmap
-        // icon — it has no monochrome layer — and fall through to the activity's adaptive icon
-        // below, which carries a themed (monochrome) variant, matching the home screen and drawer.
-        val icon =
-            if (LauncherPrefs.ALLAPPS_THEMED_ICONS.get(context)) null
-            else getIcon(desc, key.userId)
+        // Load icon
+        val icon = getIcon(desc, key.userId)
         val userInfo = UserCache.INSTANCE.get(context).getUserInfo(user)
 
         if (icon != null) {
@@ -318,9 +305,7 @@ constructor(
         val title: String = "",
     ) {
         fun toTaskCacheEntry(context: Context): TaskCacheEntry {
-            // Theme Recents task icons too under "full minimalism" (themed all-apps icons).
-            val flags = if (LauncherPrefs.ALLAPPS_THEMED_ICONS.get(context)) FLAG_THEMED else 0
-            return TaskCacheEntry(bitmapInfo.newIcon(context, flags), contentDescription, title)
+            return TaskCacheEntry(bitmapInfo.newIcon(context), contentDescription, title)
         }
     }
 
