@@ -358,13 +358,13 @@
     <!-- popup_arrow_horizontal_center_offset - system_shortcut_icon_size / 2 -->
     <dimen name="system_shortcut_margin_start">16dp</dimen>
     <dimen name="system_shortcut_header_height">52dp</dimen>
-    <dimen name="system_shortcut_header_icon_touch_size">48dp</dimen>
+    <dimen name="system_shortcut_header_icon_touch_size">42dp</dimen>
     <!-- (system_shortcut_header_icon_touch_size - system_shortcut_icon_size) / 2 -->
-    <dimen name="system_shortcut_header_icon_padding">14dp</dimen>
+    <dimen name="system_shortcut_header_icon_padding">11dp</dimen>
     <!-- side of start/end icon near to container edge -->
-    <dimen name="system_shortcut_header_icon_padding_outer">16dp</dimen>
+    <dimen name="system_shortcut_header_icon_padding_outer">13dp</dimen>
     <!-- side of start/end icon far from container edge -->
-    <dimen name="system_shortcut_header_icon_padding_inner">12dp</dimen>
+    <dimen name="system_shortcut_header_icon_padding_inner">9dp</dimen>
 
 
     <!-- Notifications -->
