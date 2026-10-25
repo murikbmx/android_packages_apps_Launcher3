@@ -347,6 +347,7 @@ object TaskOverlayModule {
             TaskShortcutFactory.SAVE_APP_PAIR,
             TaskShortcutFactory.SCREENSHOT,
             TaskShortcutFactory.MODAL,
+            TaskShortcutFactory.UNINSTALL,
         )
 }
 
