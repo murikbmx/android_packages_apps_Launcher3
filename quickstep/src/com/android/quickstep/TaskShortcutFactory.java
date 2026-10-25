@@ -24,6 +24,10 @@ import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCH
 import static com.android.launcher3.util.SplitConfigurationOptions.STAGE_POSITION_BOTTOM_OR_RIGHT;
 
 import android.app.ActivityOptions;
+import android.content.ComponentName;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.LauncherApps;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.os.Handler;
@@ -41,7 +45,9 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.R;
+import com.android.launcher3.SecondaryDropTarget;
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent;
+import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.popup.SystemShortcut.AppInfo;
 import com.android.launcher3.util.InstantAppResolver;
@@ -495,4 +501,47 @@ public interface TaskShortcutFactory {
             return createSingletonShortcutList(modalStateSystemShortcut);
         }
     };
+
+    TaskShortcutFactory UNINSTALL = new TaskShortcutFactory() {
+        @Override
+        public List<SystemShortcut> getShortcuts(RecentsViewContainer container,
+                TaskContainer taskContainer) {
+            ItemInfo itemInfo = taskContainer.getItemInfo();
+            ComponentName cn = itemInfo.getTargetComponent();
+            if (cn == null) {
+                return null;
+            }
+            // System apps can't be uninstalled
+            try {
+                ApplicationInfo appInfo = container.asContext()
+                        .getSystemService(LauncherApps.class)
+                        .getApplicationInfo(cn.getPackageName(), 0, itemInfo.user);
+                if ((appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
+                    return null;
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                return null;
+            }
+            return Collections.singletonList(new UninstallSystemShortcut(container, itemInfo,
+                    taskContainer.getTaskView(), cn));
+        }
+    };
+
+    class UninstallSystemShortcut extends SystemShortcut<RecentsViewContainer> {
+        private final ComponentName mComponentName;
+
+        public UninstallSystemShortcut(RecentsViewContainer target, ItemInfo itemInfo,
+                View originalView, ComponentName cn) {
+            super(R.drawable.ic_uninstall_no_shadow, R.string.uninstall_drop_target_label,
+                    target, itemInfo, originalView);
+            mComponentName = cn;
+        }
+
+        @Override
+        public void onClick(View view) {
+            dismissTaskMenuView();
+            // Opens the system confirmation dialog
+            SecondaryDropTarget.performUninstall(view.getContext(), mComponentName, mItemInfo);
+        }
+    }
 }
