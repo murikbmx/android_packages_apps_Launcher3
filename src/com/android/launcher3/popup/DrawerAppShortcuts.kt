@@ -52,10 +52,11 @@ object DrawerAppShortcuts {
         }
 
     /**
-     * Apps of the app drawer, its search results and suggestions. Private space apps already have
-     * their own shortcuts.
+     * Apps of the app drawer, its folders, search results and suggestions. Private space apps
+     * already have their own shortcuts.
      */
-    private fun isDrawerApp(target: ActivityContext, itemInfo: ItemInfo): Boolean =
+    @JvmStatic
+    fun isDrawerApp(target: ActivityContext, itemInfo: ItemInfo): Boolean =
         target is Launcher &&
             (itemInfo.container == Favorites.CONTAINER_ALL_APPS ||
                 itemInfo.container == Favorites.CONTAINER_ALL_APPS_PREDICTION) &&

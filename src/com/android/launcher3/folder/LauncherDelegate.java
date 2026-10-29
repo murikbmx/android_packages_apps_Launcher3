@@ -168,6 +168,11 @@ public class LauncherDelegate {
         }
     }
 
+    /** Returns a delegate that leaves the launcher behind the folder untouched. */
+    static LauncherDelegate withoutLauncher(ActivityContext context) {
+        return new FallbackDelegate(context);
+    }
+
     static LauncherDelegate from(ActivityContext context) {
         return context instanceof Launcher l
                 ? new LauncherDelegate(l)

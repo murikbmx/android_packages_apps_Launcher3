@@ -20,14 +20,16 @@ import android.content.ComponentName
 import android.view.View
 import com.android.launcher3.LauncherSettings.Favorites
 import com.android.launcher3.R
+import com.android.launcher3.allapps.DrawerFolderDialogs
 import com.android.launcher3.model.data.ItemInfo
 import com.android.launcher3.model.data.ItemInfoWithIcon
 import com.android.launcher3.util.CustomAppTitles
 import com.android.launcher3.views.ActivityContext
-import com.android.launcher3.views.TextInputDialog
-import com.android.launcher3.views.TextInputDialogViewModel
 
-/** Long-press shortcuts to give an app a custom title and to reset it to the app label. */
+/**
+ * Long-press shortcuts to edit an app, giving it a custom title or putting it in app drawer
+ * folders, and to reset its title to the app label.
+ */
 object AppTitleShortcuts {
 
     @JvmField
@@ -45,27 +47,6 @@ object AppTitleShortcuts {
             else ResetAppTitle(target, itemInfo, originalView)
         }
 
-    /** Shows the dialog to give the app a custom title. */
-    @JvmStatic
-    fun showRenameDialog(target: ActivityContext, itemInfo: ItemInfo) {
-        val component = itemInfo.renamableComponent() ?: return
-        val context = target.asContext()
-        val user = itemInfo.user
-        val renameButton = R.string.home_screen_files_rename_dialog_positive_button
-        TextInputDialog(
-                target,
-                TextInputDialogViewModel(
-                    target,
-                    title = context.getString(R.string.rename_app_dialog_title),
-                    initialText = itemInfo.title?.toString() ?: "",
-                    positiveButton = context.getString(renameButton),
-                ) { name ->
-                    CustomAppTitles.set(context, component, user, name)
-                },
-            )
-            .show()
-    }
-
     /** Only apps can be renamed, not deep shortcuts, widgets or folders. */
     private fun ItemInfo.renamableComponent(): ComponentName? =
         if (itemType == Favorites.ITEM_TYPE_APPLICATION && this is ItemInfoWithIcon) {
@@ -82,9 +63,9 @@ object AppTitleShortcuts {
         originalView) {
 
         override fun onClick(view: View) {
-            if (mItemInfo.renamableComponent() == null) return
+            val component = mItemInfo.renamableComponent() ?: return
             dismissTaskMenuView()
-            showRenameDialog(mTarget, mItemInfo)
+            DrawerFolderDialogs.showAppEditDialog(mTarget, mItemInfo, component, mOriginalView)
         }
     }
 
