@@ -32,6 +32,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -41,7 +42,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.R;
 import com.android.launcher3.allapps.search.SearchAdapterProvider;
+import com.android.launcher3.folder.DrawerFolderIcon;
+import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.model.data.AppInfo;
+import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.touch.CustomActionsListener;
 import com.android.launcher3.views.ActivityContext;
@@ -67,11 +71,14 @@ public abstract class BaseAllAppsAdapter
     public static final int VIEW_TYPE_PRIVATE_SPACE_SYS_APPS_DIVIDER = 1 << 7;
     public static final int VIEW_TYPE_BOTTOM_VIEW_TO_SCROLL_TO = 1 << 8;
     public static final int VIEW_TYPE_PRIVATE_SPACE_APP_ICON = 1 << 9;
-    public static final int NEXT_ID = 10;
+    // A folder of the app drawer
+    public static final int VIEW_TYPE_FOLDER = 1 << 10;
+    public static final int NEXT_ID = 11;
 
     // Common view type masks
     public static final int VIEW_TYPE_MASK_DIVIDER = VIEW_TYPE_ALL_APPS_DIVIDER;
-    public static final int VIEW_TYPE_MASK_ICON = VIEW_TYPE_ICON | VIEW_TYPE_PRIVATE_SPACE_APP_ICON;
+    public static final int VIEW_TYPE_MASK_ICON = VIEW_TYPE_ICON | VIEW_TYPE_PRIVATE_SPACE_APP_ICON
+            | VIEW_TYPE_FOLDER;
 
     public static final int VIEW_TYPE_MASK_PRIVATE_SPACE_HEADER =
             VIEW_TYPE_PRIVATE_SPACE_HEADER;
@@ -107,6 +114,8 @@ public abstract class BaseAllAppsAdapter
         public int rowAppIndex;
         // The associated ItemInfoWithIcon for the item
         public AppInfo itemInfo = null;
+        // The folder of a VIEW_TYPE_FOLDER item
+        public FolderInfo folderInfo = null;
         // Private App Decorator
         public SectionDecorationInfo decorationInfo = null;
         public AdapterItem(int viewType) {
@@ -119,6 +128,15 @@ public abstract class BaseAllAppsAdapter
         public static AdapterItem asApp(AppInfo appInfo) {
             AdapterItem item = new AdapterItem(VIEW_TYPE_ICON);
             item.itemInfo = appInfo;
+            return item;
+        }
+
+        /**
+         * Factory method for app drawer folder AdapterItem
+         */
+        public static AdapterItem asFolder(FolderInfo folderInfo) {
+            AdapterItem item = new AdapterItem(VIEW_TYPE_FOLDER);
+            item.folderInfo = folderInfo;
             return item;
         }
 
@@ -151,6 +169,9 @@ public abstract class BaseAllAppsAdapter
                         && java.util.Objects.equals(itemInfo.getTargetComponent(),
                                 other.itemInfo.getTargetComponent());
             }
+            if (viewType == VIEW_TYPE_FOLDER) {
+                return folderInfo.id == other.folderInfo.id;
+            }
             return true;
         }
 
@@ -159,7 +180,7 @@ public abstract class BaseAllAppsAdapter
          * as well. Returning true will prevent redrawing of thee item.
          */
         public boolean isContentSame(AdapterItem other) {
-            return itemInfo == null && other.itemInfo == null;
+            return itemInfo == null && other.itemInfo == null && folderInfo == other.folderInfo;
         }
 
         @Nullable
@@ -243,6 +264,13 @@ public abstract class BaseAllAppsAdapter
                     return true;
                 });
                 return new ViewHolder(icon);
+            case VIEW_TYPE_FOLDER:
+                // The folder icon is added when bound, as it's tied to its folder
+                FrameLayout folderContainer = new FrameLayout(mActivityContext.asContext());
+                folderContainer.setLayoutParams(new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        mActivityContext.getDeviceProfile().getAllAppsProfile().getCellHeightPx()));
+                return new ViewHolder(folderContainer);
             case VIEW_TYPE_EMPTY_SEARCH:
                 return new ViewHolder(mLayoutInflater.inflate(R.layout.all_apps_empty_search,
                         parent, false));
@@ -313,6 +341,10 @@ public abstract class BaseAllAppsAdapter
                 }
                 break;
             }
+            case VIEW_TYPE_FOLDER:
+                bindFolder((FrameLayout) holder.itemView,
+                        mApps.getAdapterItems().get(position).folderInfo);
+                break;
             case VIEW_TYPE_EMPTY_SEARCH: {
                 AppInfo info = mApps.getAdapterItems().get(position).itemInfo;
                 if (info != null) {
@@ -354,6 +386,26 @@ public abstract class BaseAllAppsAdapter
                     mAdapterProvider.onBindView(holder, position);
                 }
         }
+    }
+
+    private void bindFolder(FrameLayout container, FolderInfo folderInfo) {
+        if (container.getChildAt(0) instanceof FolderIcon oldIcon) {
+            if (oldIcon.getTag() == folderInfo) {
+                return;
+            }
+            // The folder of the old icon is replaced, don't leave it open
+            if (oldIcon.getFolder().isOpen()) {
+                oldIcon.getFolder().close(false);
+            }
+            container.removeAllViews();
+        }
+        DrawerFolderIcon icon = DrawerFolderIcon.inflate(mActivityContext, container, folderInfo);
+        icon.setOnFocusChangeListener(mIconFocusListener);
+        icon.setOnLongClickListener(v -> {
+            DrawerFolderDialogs.showFolderEditDialog(mActivityContext, icon);
+            return true;
+        });
+        container.addView(icon);
     }
 
     private BubbleTextView getIconOnCreateSetup(ViewGroup parent) {

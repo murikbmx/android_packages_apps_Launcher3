@@ -25,7 +25,6 @@ import static com.android.launcher3.folder.ClippedFolderIconLayoutRule.MAX_NUM_I
 import static com.android.launcher3.folder.FolderIcon.DROP_IN_ANIMATION_DURATION;
 import static com.android.launcher3.graphics.AutomatedIconDelegate.newAutomatedIcon;
 import static com.android.launcher3.graphics.PreloadIconDelegate.newPendingIcon;
-import static com.android.launcher3.icons.BitmapInfo.FLAG_THEMED;
 import static com.android.launcher3.model.data.ItemInfoWithIcon.FLAG_AUTOMATED;
 
 import android.animation.Animator;
@@ -459,12 +458,12 @@ public class PreviewItemManager {
             PreviewItemDrawingParams p, ItemInfo item, boolean loadHighResIcon) {
         if (item instanceof WorkspaceItemInfo wii) {
             if (wii.shouldShowPendingIcon()) {
-                p.drawable = newPendingIcon(wii, mContext, FLAG_THEMED);
+                p.drawable = newPendingIcon(wii, mContext, mIcon.getPreviewIconFlags());
             } else if (Flags.enableAppAutomationIndicator()
                     && (wii.runtimeStatusFlags & FLAG_AUTOMATED) != 0) {
-                p.drawable = newAutomatedIcon(mContext, wii, FLAG_THEMED);
+                p.drawable = newAutomatedIcon(mContext, wii, mIcon.getPreviewIconFlags());
             } else if (!maybeHandleAutomationExit(wii, p)) {
-                p.drawable = wii.newIcon(mContext, FLAG_THEMED);
+                p.drawable = wii.newIcon(mContext, mIcon.getPreviewIconFlags());
             }
             p.drawable.setBounds(0, 0, mIconSize, mIconSize);
         } else if (item instanceof AppPairInfo api) {
@@ -503,7 +502,7 @@ public class PreviewItemManager {
                 && p.drawable instanceof FastBitmapDrawable fbd
                 && fbd.getDelegate() instanceof AutomatedIconDelegate aid) {
             aid.startExitAnimation(() -> {
-                p.drawable = wii.newIcon(mContext, FLAG_THEMED);
+                p.drawable = wii.newIcon(mContext, mIcon.getPreviewIconFlags());
                 if (p.drawable != null) {
                     p.drawable.setBounds(0, 0, mIconSize, mIconSize);
                     p.drawable.setCallback(mIcon);

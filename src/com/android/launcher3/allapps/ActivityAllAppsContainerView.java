@@ -87,8 +87,10 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.repository.StringCacheRepository;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.recyclerview.AllAppsRecyclerViewPool;
+import com.android.launcher3.util.DrawerFolders;
 import com.android.launcher3.util.ItemInfoMatcher;
 import com.android.launcher3.util.Preconditions;
+import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.util.ViewEx;
 import com.android.launcher3.views.ActivityContext;
@@ -154,6 +156,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     private final Paint mNavBarScrimPaint;
     private final int mHeaderProtectionColor;
     private final int mPrivateSpaceBottomExtraSpace;
+    @Nullable private SafeCloseable mDrawerFoldersListener;
     private final Path mTmpPath = new Path();
     private final RectF mTmpRectF = new RectF();
     protected AllAppsPagedView mViewPager;
@@ -340,12 +343,20 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
             mSearchUiDelegate.onInitializeSearchBar();
         }
         mActivityContext.addOnDeviceProfileChangeListener(this);
+        mDrawerFoldersListener = DrawerFolders.addChangeListener(() -> {
+            mAH.get(AdapterHolder.MAIN).mAppsList.onAppsUpdated();
+            mAH.get(AdapterHolder.WORK).mAppsList.onAppsUpdated();
+        });
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mActivityContext.removeOnDeviceProfileChangeListener(this);
+        if (mDrawerFoldersListener != null) {
+            mDrawerFoldersListener.close();
+            mDrawerFoldersListener = null;
+        }
     }
 
     public SearchUiManager getSearchUiManager() {

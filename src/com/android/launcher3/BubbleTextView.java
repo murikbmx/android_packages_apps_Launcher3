@@ -310,6 +310,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private boolean mShouldShowLabel;
 
     private boolean mThemeAllAppsIcons;
+    @Nullable private Boolean mThemeIconsOverride;
 
     private CancellableTask mIconLoadRequest;
 
@@ -700,7 +701,18 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         return flags;
     }
 
+    /**
+     * Overrides whether the icon is themed, such as for the apps of app drawer folders which
+     * follow the app drawer setting. Null restores the default of the display.
+     */
+    public void setThemeIconsOverride(@Nullable Boolean themeIcons) {
+        mThemeIconsOverride = themeIcons;
+    }
+
     protected boolean shouldUseTheme() {
+        if (mThemeIconsOverride != null) {
+            return mThemeIconsOverride;
+        }
         return mDisplay == DISPLAY_WORKSPACE || mDisplay == DISPLAY_FOLDER
                 || mDisplay == DISPLAY_TASKBAR
                 || (mThemeAllAppsIcons

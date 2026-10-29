@@ -71,6 +71,7 @@ import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.dragndrop.DraggableView;
 import com.android.launcher3.graphics.ThemeManager;
 import com.android.launcher3.homescreenfiles.HomeScreenFilesUtils;
+import com.android.launcher3.icons.BitmapInfo;
 import com.android.launcher3.icons.DotRenderer;
 import com.android.launcher3.logger.LauncherAtom.FromState;
 import com.android.launcher3.logger.LauncherAtom.ToState;
@@ -279,7 +280,7 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
         return mFolder;
     }
 
-    private void setFolder(Folder folder) {
+    void setFolder(Folder folder) {
         mFolder = folder;
     }
 
@@ -658,9 +659,7 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        boolean shouldCenterIcon = mActivity.getDeviceProfile().getWorkspaceProfile()
-                .getIconCenterVertically();
-        if (shouldCenterIcon) {
+        if (shouldCenterIcon()) {
             int iconSize = mActivity.getDeviceProfile().getWorkspaceProfile().getIconSizePx();
             Paint.FontMetrics fm = mFolderName.getPaint().getFontMetrics();
             int cellHeightPx = iconSize + mFolderName.getCompoundDrawablePadding()
@@ -669,6 +668,16 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
                     - cellHeightPx) / 2, getPaddingRight(), getPaddingBottom());
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    /** Returns the creation flags of the preview icons. */
+    protected int getPreviewIconFlags() {
+        return BitmapInfo.FLAG_THEMED;
+    }
+
+    /** Whether the icon and its title are centered vertically in the icon's cell. */
+    protected boolean shouldCenterIcon() {
+        return mActivity.getDeviceProfile().getWorkspaceProfile().getIconCenterVertically();
     }
 
     /** Sets the visibility of the icon's title text */

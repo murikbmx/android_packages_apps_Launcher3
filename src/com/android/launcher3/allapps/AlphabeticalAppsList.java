@@ -17,6 +17,7 @@ package com.android.launcher3.allapps;
 
 import static android.multiuser.Flags.enableMovingContentIntoPrivateSpace;
 
+import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_ALL_APPS;
 import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_PRIVATESPACE;
 import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_BOTTOM_VIEW_TO_SCROLL_TO;
 import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_MASK_PRIVATE_SPACE_HEADER;
@@ -37,18 +38,27 @@ import androidx.annotation.VisibleForTesting;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.android.launcher3.Flags;
+import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.allapps.BaseAllAppsAdapter.AdapterItem;
 import com.android.launcher3.model.data.AppInfo;
+import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.model.data.PredictedItemInfo;
+import com.android.launcher3.model.data.WorkspaceItemInfo;
+import com.android.launcher3.util.ComponentKey;
+import com.android.launcher3.util.DrawerFolders;
 import com.android.launcher3.util.LabelComparator;
 import com.android.launcher3.views.ActivityContext;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -94,6 +104,8 @@ public class AlphabeticalAppsList implements AllAppsStore.OnUpdateListener {
     // The set of apps from the system
     private final List<AppInfo> mApps = new ArrayList<>();
     private final List<AppInfo> mPrivateApps = new ArrayList<>();
+    // The folders of the app drawer, shown before the apps they hold
+    private final List<FolderInfo> mFolders = new ArrayList<>();
     @Nullable
     private final AllAppsStore mAllAppsStore;
 
@@ -276,6 +288,7 @@ public class AlphabeticalAppsList implements AllAppsStore.OnUpdateListener {
 
         appSteam.forEachOrdered(mApps::add);
         privateAppStream.forEachOrdered(mPrivateApps::add);
+        moveAppsIntoFolders();
         // Recompose the set of adapter items from the current set of apps
         if (mSearchResults.isEmpty()) {
             updateAdapterItems();
@@ -312,6 +325,10 @@ public class AlphabeticalAppsList implements AllAppsStore.OnUpdateListener {
                             mActivityContext.asContext().getResources().getString(
                                     R.string.work_profile_edu_section), 0));
                     Log.d(TAG, "Adding FastScrollSection for work edu card.");
+                }
+                for (FolderInfo folder : mFolders) {
+                    mAdapterItems.add(AdapterItem.asFolder(folder));
+                    position++;
                 }
                 position = addAppsWithSections(mApps, position);
             }
@@ -361,6 +378,45 @@ public class AlphabeticalAppsList implements AllAppsStore.OnUpdateListener {
             DiffUtil.calculateDiff(new MyDiffCallback(oldItems, mAdapterItems), false)
                     .dispatchUpdatesTo(mAdapter);
         }
+    }
+
+    /**
+     * Moves the apps of the app drawer folders from the app list into the folders. Only the
+     * filtered app lists of the launcher drawer have folders, not search results or the taskbar.
+     */
+    private void moveAppsIntoFolders() {
+        mFolders.clear();
+        if (!(mActivityContext instanceof Launcher) || mItemFilter == null || hasSearchResults()) {
+            return;
+        }
+        Context context = mActivityContext.asContext();
+        Set<AppInfo> appsInFolders = new HashSet<>();
+        for (DrawerFolders.Folder folder : DrawerFolders.getFolders(context)) {
+            Set<ComponentKey> keys = new HashSet<>(folder.getApps());
+            FolderInfo info = new FolderInfo();
+            info.id = DrawerFolders.toItemId(folder.getId());
+            info.container = CONTAINER_ALL_APPS;
+            info.title = folder.getTitle();
+            // The apps keep the order of the app list
+            for (AppInfo app : mApps) {
+                if (!keys.contains(new ComponentKey(app.componentName, app.user))) {
+                    continue;
+                }
+                // Dropping the app on the home screen creates a new home screen item from it
+                WorkspaceItemInfo item = new PredictedItemInfo(app.makeWorkspaceItem(context));
+                item.container = CONTAINER_ALL_APPS;
+                item.rank = info.getContents().size();
+                info.add(item);
+                appsInFolders.add(app);
+            }
+            // Folders of another profile, or whose apps were removed, aren't shown
+            if (!info.getContents().isEmpty()) {
+                mFolders.add(info);
+            }
+        }
+        LabelComparator labelComparator = new LabelComparator();
+        mFolders.sort(Comparator.comparing(f -> f.title.toString(), labelComparator));
+        mApps.removeIf(appsInFolders::contains);
     }
 
     int addPrivateSpaceItems(int position) {
