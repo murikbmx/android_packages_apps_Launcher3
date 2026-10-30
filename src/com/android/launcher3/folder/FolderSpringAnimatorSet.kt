@@ -84,6 +84,9 @@ class FolderSpringAnimatorSet(val animatorSet: AnimatorSet) {
                 folderAnimData.isOpening,
                 launcherDelegate,
             )
+            folder.animationBackgroundView?.let {
+                addBackgroundScaleAnimator(folder.context, animatorSet, folderAnimData.isOpening, it)
+            }
             launcherDelegate.launcher?.depthController?.folderZoom?.let {
                 addWallpaperZoomAnimator(folder.context, animatorSet, folderAnimData.isOpening, it)
             }
@@ -405,6 +408,28 @@ class FolderSpringAnimatorSet(val animatorSet: AnimatorSet) {
                 view = hotseat,
             )
             animatorSet.addListener(FolderScrimAnimationListener(scrimView, isOpening))
+        }
+
+        /** Scales down the view behind the folder like the workspace and hotseat. */
+        private fun addBackgroundScaleAnimator(
+            context: Context,
+            animatorSet: AnimatorSet,
+            isOpening: Boolean,
+            view: View,
+        ) {
+            playSpringAnimation(
+                context = context,
+                animatorSet = animatorSet,
+                isOpening = isOpening,
+                startDelay = 0,
+                stiffness = STIFFNESS_LAUNCHER_SCRIM,
+                damping = DAMPING_LAUNCHER_SCRIM,
+                startValue = 1f,
+                endValue = LAUNCHER_SCALE,
+                minVisibleChange = MIN_VISIBLE_CHANGE_SCALE,
+                property = getScaleProperty(),
+                view = view,
+            )
         }
 
         /**

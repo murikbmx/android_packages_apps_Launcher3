@@ -1065,6 +1065,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             FolderAnimationSpringBuilderManager.resetLauncherScale(
                     getAnimationLauncherDelegate());
             FolderAnimationSpringBuilderManager.resetScrimAndZoom(getAnimationLauncherDelegate());
+            FolderAnimationSpringBuilderManager.resetBackgroundScale(this);
         }
         onCloseComplete();
     }
@@ -1075,6 +1076,12 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     /** Returns the delegate for the launcher views the folder animation scales and dims. */
     LauncherDelegate getAnimationLauncherDelegate() {
         return mLauncherDelegate;
+    }
+
+    /** Returns the view scaled down behind the folder in place of the workspace, if any. */
+    @Nullable
+    View getAnimationBackgroundView() {
+        return null;
     }
 
     /** Prepares the icon of an item before the item is applied to it. */

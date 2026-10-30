@@ -126,6 +126,12 @@ public class DrawerFolder extends Folder {
     }
 
     @Override
+    View getAnimationBackgroundView() {
+        // The app drawer is scaled down behind the folder, like the workspace on the home screen
+        return mActivityContext instanceof Launcher launcher ? launcher.getAppsView() : null;
+    }
+
+    @Override
     void prepareItemView(BubbleTextView icon) {
         // Themed like the apps of the drawer, not the home screen
         icon.setThemeIconsOverride(LauncherPrefs.ALLAPPS_THEMED_ICONS.get(getContext()));
