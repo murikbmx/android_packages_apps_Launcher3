@@ -22,6 +22,7 @@ import com.android.launcher3.BubbleTextView
 import com.android.launcher3.LauncherAnimUtils.HOTSEAT_SCALE_PROPERTY_FACTORY
 import com.android.launcher3.LauncherAnimUtils.SCALE_INDEX_FOLDER_ANIM
 import com.android.launcher3.LauncherAnimUtils.WORKSPACE_SCALE_PROPERTY_FACTORY
+import com.android.launcher3.LauncherAnimUtils.getScaleProperty
 import com.android.launcher3.apppairs.AppPairIcon
 import com.android.launcher3.folder.ClipRevealData.Factory.getClipRevealData
 import com.android.launcher3.folder.FolderAnimationData.Factory.getAnimationData
@@ -47,6 +48,7 @@ class FolderAnimationSpringBuilderManager(
         // Since we scale down workspace/hotseat when opening folder,
         // need to have initial values to find starting folder icon location
         resetLauncherScale(launcherDelegate)
+        resetBackgroundScale(folder)
         val folderAnimData: FolderAnimationData = folder.getAnimationData(isOpening)
         val clipRevealData: ClipRevealData = folder.getClipRevealData(shapeDelegate, folderAnimData)
         val iconAnimData: List<IconAnimationData> = folder.getIconAnimationDataList(folderAnimData)
@@ -71,6 +73,12 @@ class FolderAnimationSpringBuilderManager(
             workspace.setPivotToScaleWithSelf(hotseat)
             WORKSPACE_SCALE_PROPERTY_FACTORY.get(SCALE_INDEX_FOLDER_ANIM).set(workspace, 1f)
             HOTSEAT_SCALE_PROPERTY_FACTORY.get(SCALE_INDEX_FOLDER_ANIM).set(hotseat, 1f)
+        }
+
+        /** Resets the scale of the view behind the folder, which replaces the workspace. */
+        @JvmStatic
+        fun resetBackgroundScale(folder: Folder) {
+            folder.animationBackgroundView?.let { getScaleProperty().set(it, 1f) }
         }
 
         /** Resets the scrim and wallpaper zoom, which are changed by the folder animation. */
