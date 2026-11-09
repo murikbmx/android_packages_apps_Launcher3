@@ -1124,8 +1124,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         int height = MeasureSpec.getSize(heightMeasureSpec);
         if (mCenterVertically) {
             Paint.FontMetrics fm = getPaint().getFontMetrics();
+            // Reserve room for both lines when two-line labels are on, so the icon and label
+            // stay centered in the cell whether the label wraps or not.
+            int lineCount = Math.max(getCellSpecMaxTextLineCount(), shouldUseTwoLine() ? 2 : 1);
             int cellHeightPx = mIconSize + getCompoundDrawablePadding() +
-                    (int) Math.ceil(fm.bottom - fm.top) * getCellSpecMaxTextLineCount();
+                    (int) Math.ceil(fm.bottom - fm.top) * lineCount;
             setPadding(getPaddingLeft(), (height - cellHeightPx) / 2, getPaddingRight(),
                     getPaddingBottom());
         }
@@ -1330,7 +1333,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                     newString.append(NEW_LINE).append(lastCharacters);
                     StaticLayout staticLayout = new StaticLayout(newString, paint, limitedWidth,
                             ALIGN_NORMAL, spacingMultiplier, spacingExtra, false);
-                    if (staticLayout.getHeight() < limitedHeight) {
+                    // Only the first two lines are shown; if the remainder doesn't fit on the
+                    // second line it gets ellipsized, so only those two lines need to fit.
+                    int twoLineHeight = staticLayout.getLineBottom(
+                            Math.min(1, staticLayout.getLineCount() - 1));
+                    if (twoLineHeight <= limitedHeight) {
                         return newString.toString();
                     }
                 }
