@@ -47,6 +47,8 @@
     <string name="settings_edit_widgets_error">Невозможно добавить виджеты на главный экран</string>
     <string name="desktop_show_labels">Отображать подписи значков на рабочем столе</string>
     <string name="drawer_show_labels">Отображать подписи значков в меню</string>
+    <string name="drawer_two_line_labels">Подписи значков в меню в две строки</string>
+    <string name="drawer_two_line_labels_summary">Переносить длинные названия приложений на вторую строку</string>
     <string name="pref_show_hotseat_qsb_title">Показать строку поиска</string>
     <string name="pref_show_hotseat_qsb_summary">В нижней части домашнего экрана</string>
     <string name="drawer_open_keyboard_title">Проведите для начала поиска</string>

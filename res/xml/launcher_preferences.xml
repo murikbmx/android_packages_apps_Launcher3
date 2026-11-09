@@ -87,6 +87,14 @@
         android:persistent="true" />
 
     <SwitchPreferenceCompat
+        android:key="pref_enable_two_line_toggle"
+        android:title="@string/drawer_two_line_labels"
+        android:summary="@string/drawer_two_line_labels_summary"
+        android:dependency="pref_drawer_show_labels"
+        android:defaultValue="false"
+        android:persistent="true" />
+
+    <SwitchPreferenceCompat
         android:defaultValue="true"
         android:key="pref_enable_minus_one"
         android:summary="@string/pref_show_google_now_summary"

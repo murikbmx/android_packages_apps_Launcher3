@@ -427,11 +427,15 @@ public class DeviceProfile {
 
         if (inv.enableTwoLinesInAllApps
                 && !(mIsResponsiveGrid && getAllAppsProfile().getMaxAllAppsTextLineCount() == 2)) {
-            // Add extra textHeight to the existing allAppsCellHeight.
-            mAllAppsProfile = getAllAppsProfile().copyWithCellHeightPx(
-                    getAllAppsProfile().getCellHeightPx()
-                            + Utilities.calculateTextHeight(getAllAppsProfile().getIconTextSizePx())
-            );
+            // Only grow the cell if the icon plus two lines of text (and a small gap to the next
+            // row) doesn't already fit; most grids have enough room below a single-line label.
+            AllAppsProfile allApps = getAllAppsProfile();
+            int textHeight = Utilities.calculateTextHeight(allApps.getIconTextSizePx());
+            int requiredHeight = allApps.getIconSizePx() + allApps.getIconDrawablePaddingPx()
+                    + 2 * textHeight + textHeight / 2;
+            if (requiredHeight > allApps.getCellHeightPx()) {
+                mAllAppsProfile = allApps.copyWithCellHeightPx(requiredHeight);
+            }
         }
 
         mBottomSheetProfile = BottomSheetProfile.Factory.createBottomSheetProfile(
