@@ -101,8 +101,11 @@ class PopupViewModel {
         val deepPlaceholder = List(numDeep) { null }
         expandedSection = null
 
-        // Scenario where we don't surpass the max amount of rows with the items we have.
-        if (systemShortcuts.size + numDeep <= maxRows) {
+        // Show a flat list only when there is nothing to toggle between.
+        if (
+            systemShortcuts.isEmpty() ||
+                (numDeep < DEEP_SHORTCUTS_ACCORDION_THRESHOLD && systemShortcuts.size <= maxRows)
+        ) {
             state =
                 PopupUiState(
                     standardSystemShortcuts = systemShortcuts,
@@ -185,6 +188,6 @@ class PopupViewModel {
         private const val DEFAULT_MAX_ROWS = 7
 
         /** The minimum number of deep shortcuts that can trigger the accordion layout. */
-        private const val DEEP_SHORTCUTS_ACCORDION_THRESHOLD = 2
+        private const val DEEP_SHORTCUTS_ACCORDION_THRESHOLD = 1
     }
 }
