@@ -20,7 +20,6 @@ import android.content.Context
 import android.os.Trace
 import android.view.View
 import com.android.launcher3.BubbleTextView
-import com.android.launcher3.Flags
 import com.android.launcher3.Launcher
 import com.android.launcher3.model.data.ItemInfo
 import com.android.launcher3.popup.ui.PopupItem
@@ -70,7 +69,7 @@ class PopupControllerForAppIcon<T> : PopupController<T> where T : Context, T : A
             container.deepShortcutDragHandler =
                 LauncherDeepShortcutDragHandler(activityContext as Launcher, container)
             container.configureForLauncher(activityContext, item)
-            if (Flags.expandableLongPressMenu()) {
+            if (true /* expandableLongPressMenu */) {
                 val systemShortcutRedesign =
                     systemShortcuts.map { shortcut ->
                         PopupItem(
