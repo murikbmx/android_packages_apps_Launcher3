@@ -37,6 +37,7 @@ import com.android.launcher3.R
 import com.android.launcher3.util.MultiPropertyFactory
 import com.android.launcher3.util.ViewPool
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.AppLocked
+import com.android.quickstep.views.RecentsStyle
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.BackgroundOnly
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.LiveTile
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.Snapshot
@@ -141,7 +142,7 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
             is Uninitialized -> {}
             is LiveTile -> drawLiveWindow()
             is SnapshotSplash -> drawSnapshotSplash(state)
-            is BackgroundOnly -> drawBackground(state.backgroundColor)
+            is BackgroundOnly -> drawBackground(themedCardColor())
             is AppLocked -> drawAppLocked(state)
         }
     }
@@ -205,10 +206,15 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
                 RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP)
             )
         } else {
-            drawBackground(state.backgroundColor)
+            drawBackground(themedCardColor())
         }
         appLockIcon.isInvisible = false
     }
+
+    /** Card color following the system dark / light theme. */
+    @ColorInt
+    private fun themedCardColor(): Int =
+        if (RecentsStyle.isDarkTheme(context)) 0xFF202124.toInt() else 0xFFF1F3F4.toInt()
 
     private fun drawSnapshotSplash(snapshotSplash: SnapshotSplash) {
         drawSnapshot(snapshotSplash.snapshot)
