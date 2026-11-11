@@ -362,6 +362,8 @@ constructor(@ApplicationContext private val encryptedContext: Context) {
 
         @JvmField val SHOW_HOTSEAT_QSB = backedUpItem("pref_show_hotseat_qsb", false)
 
+        @JvmField val RECENTS_STYLE = backedUpItem("pref_recents_style", "2")
+
         @JvmStatic
         fun isHotseatQsbEnabled(context: Context): Boolean {
             return try {

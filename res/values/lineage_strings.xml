@@ -100,4 +100,17 @@
     <string name="trust_apps_relock_1_minute">After 1 minute</string>
     <string name="trust_apps_info_hidden">Hidden apps and their widgets are hidden from the drawer</string>
     <string name="trust_apps_info_protected">Protected apps require authentication whenever they are opened, their notifications are hidden and they are shown locked in Recents</string>
+
+    <!-- Recents style -->
+    <string name="pref_recents_style_title">Recent apps style</string>
+    <string-array name="pref_recents_style_entries" translatable="false">
+        <item>@string/pref_recents_style_aosp</item>
+        <item>@string/pref_recents_style_stack</item>
+    </string-array>
+    <string-array name="pref_recents_style_values" translatable="false">
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    <string name="pref_recents_style_aosp" translatable="false">Default</string>
+    <string name="pref_recents_style_stack" translatable="false">iOS</string>
 </resources>
