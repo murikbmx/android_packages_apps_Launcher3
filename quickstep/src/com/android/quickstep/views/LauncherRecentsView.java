@@ -142,6 +142,9 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
     @Override
     public void onStateTransitionStart(LauncherState toState) {
         setOverviewStateEnabled(toState.isRecentsViewVisible);
+        if (!toState.isRecentsViewVisible) {
+            resetRecentsStyle();
+        }
 
         if (toState.displayOverviewTasksAsGrid(mContainer.getDeviceProfile())) {
             setOverviewGridEnabled(true);
@@ -167,6 +170,9 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
     @Override
     public void onStateTransitionComplete(LauncherState finalState) {
         mUtils.onStateTransitionComplete(finalState);
+        if (finalState == OVERVIEW) {
+            animateRecentsStyleIn();
+        }
         DesktopVisibilityController.INSTANCE.get(mContainer).onLauncherStateChanged(
                 mContainer.getDisplayId(), finalState);
         if (!finalState.displayOverviewTasksAsGrid(mContainer.getDeviceProfile())) {

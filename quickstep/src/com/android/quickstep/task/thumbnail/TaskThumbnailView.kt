@@ -18,6 +18,8 @@ package com.android.quickstep.task.thumbnail
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.graphics.Matrix
 import android.graphics.Outline
 import android.graphics.Path
@@ -35,6 +37,7 @@ import com.android.launcher3.R
 import com.android.launcher3.util.MultiPropertyFactory
 import com.android.launcher3.util.ViewPool
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.AppLocked
+import com.android.quickstep.views.RecentsStyle
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.BackgroundOnly
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.LiveTile
 import com.android.quickstep.task.thumbnail.TaskThumbnailUiState.Snapshot
@@ -139,8 +142,8 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
             is Uninitialized -> {}
             is LiveTile -> drawLiveWindow()
             is SnapshotSplash -> drawSnapshotSplash(state)
-            is BackgroundOnly -> drawBackground(state.backgroundColor)
-            is AppLocked -> drawAppLocked(state.backgroundColor)
+            is BackgroundOnly -> drawBackground(themedCardColor())
+            is AppLocked -> drawAppLocked(state)
         }
     }
 
@@ -179,6 +182,7 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
         splashIcon.alpha = 0f
         splashIcon.setImageDrawable(null)
         appLockIcon.isInvisible = true
+        thumbnailView.setRenderEffect(null)
         scrimView.alpha = 0f
         alpha = 1.0f
         setBackgroundColor(Color.TRANSPARENT)
@@ -192,10 +196,25 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
         liveTileView.isInvisible = false
     }
 
-    private fun drawAppLocked(@ColorInt background: Int) {
-        drawBackground(background)
+    private fun drawAppLocked(state: AppLocked) {
+        val snapshot = state.snapshot
+        if (snapshot != null) {
+            // Show the content of locked apps only as a heavy blur.
+            drawSnapshot(snapshot)
+            val radius = 40f * resources.displayMetrics.density
+            thumbnailView.setRenderEffect(
+                RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP)
+            )
+        } else {
+            drawBackground(themedCardColor())
+        }
         appLockIcon.isInvisible = false
     }
+
+    /** Card color following the system dark / light theme. */
+    @ColorInt
+    private fun themedCardColor(): Int =
+        if (RecentsStyle.isDarkTheme(context)) 0xFF202124.toInt() else 0xFFF1F3F4.toInt()
 
     private fun drawSnapshotSplash(snapshotSplash: SnapshotSplash) {
         drawSnapshot(snapshotSplash.snapshot)

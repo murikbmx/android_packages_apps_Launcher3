@@ -396,6 +396,23 @@ constructor(
             applyScale()
         }
 
+    // Custom recents style (grid / stack) transforms.
+    private var styleTranslationX = 0f
+    private var styleTranslationY = 0f
+    private var styleScale = 1f
+
+    fun setStyleTransform(tx: Float, ty: Float, scale: Float, z: Float) {
+        if (styleTranslationX == tx && styleTranslationY == ty && styleScale == scale &&
+            translationZ == z) return
+        styleTranslationX = tx
+        styleTranslationY = ty
+        styleScale = scale
+        translationZ = z
+        applyTranslationX()
+        applyTranslationY()
+        applyScale()
+    }
+
     private var dismissTranslationX = 0f
         set(value) {
             field = value
@@ -1296,6 +1313,7 @@ constructor(
             )
             return
         }
+        recentsView?.resetRecentsStyle()
         launchWithAnimation()
         container.statsLogManager
             .logger()
@@ -1775,6 +1793,7 @@ constructor(
     private fun applyScale() {
         val scale =
             persistentScale *
+                styleScale *
                 dismissScale *
                 animateToIconScale *
                 Utilities.mapRange(modalness, 1f, modalScale)
@@ -1785,7 +1804,8 @@ constructor(
 
     private fun applyTranslationX() {
         translationX =
-            dismissTranslationX +
+            styleTranslationX +
+                dismissTranslationX +
                 taskOffsetTranslationX +
                 taskResistanceTranslationX +
                 splitSelectTranslationX +
@@ -1796,7 +1816,8 @@ constructor(
 
     private fun applyTranslationY() {
         translationY =
-            dismissTranslationY +
+            styleTranslationY +
+                dismissTranslationY +
                 taskOffsetTranslationY +
                 taskResistanceTranslationY +
                 splitSelectTranslationY +
@@ -1824,7 +1845,9 @@ constructor(
     protected open fun updateFullscreenParams() {
         updateFullscreenParams(thumbnailFullscreenParams)
         taskContainers.forEach {
-            it.taskContentView.cornerRadius = thumbnailFullscreenParams.currentCornerRadius
+            // Keep corners proportional to the card when a recents style shrinks it.
+            it.taskContentView.cornerRadius =
+                thumbnailFullscreenParams.currentCornerRadius * styleScale
             it.overlay.setFullscreenParams(thumbnailFullscreenParams)
         }
     }

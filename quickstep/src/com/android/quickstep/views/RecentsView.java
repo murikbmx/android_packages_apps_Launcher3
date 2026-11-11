@@ -1523,6 +1523,11 @@ public abstract class RecentsView<
             mHelper.startPreloading();
         }
         mOverviewStateEnabled = enabled;
+        if (enabled && RecentsStyle.get(getContext()) == RecentsStyle.STACK && !showAsGrid()) {
+            // The stack keeps the centered (running) task in place, so apply it right away.
+            if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
+            setRecentsStyleProgress(1f);
+        }
         updateTaskStackListenerState();
         mOrientationState.setRotationWatcherEnabled(enabled);
         if (!enabled) {
@@ -3859,6 +3864,7 @@ public abstract class RecentsView<
         mLastComputedTaskStartPushOutDistance = null;
         mLastComputedTaskEndPushOutDistance = null;
         updatePageOffsets();
+        applyRecentsStyle();
         runActionOnRemoteHandles(
                 remoteTargetHandle -> remoteTargetHandle.getTaskViewSimulator()
                         .setScroll(getScrollOffset()));
@@ -4910,6 +4916,10 @@ public abstract class RecentsView<
 
     public void setEnableDrawingLiveTile(boolean enableDrawingLiveTile) {
         mEnableDrawingLiveTile = enableDrawingLiveTile;
+        if (enableDrawingLiveTile && mRecentsStyleSettled) {
+            // The live tile can't follow the grid/stack transforms: use a screenshot instead.
+            post(this::finishLiveTileForStyle);
+        }
     }
 
     public boolean getEnableDrawingLiveTile() {
@@ -5742,6 +5752,96 @@ public abstract class RecentsView<
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
         super.onScrollChanged(l, t, oldl, oldt);
         dispatchScrollChanged();
+        applyRecentsStyle();
+    }
+
+    // ---- Custom recents style: iOS-like card stack ----
+    private float mRecentsStyleProgress = 0f;
+    private ValueAnimator mRecentsStyleAnimator;
+    private boolean mRecentsStyleSettled;
+
+    /** Called once overview has settled: finishes the live tile and fully applies the style. */
+    public void animateRecentsStyleIn() {
+        if (RecentsStyle.get(getContext()) == RecentsStyle.AOSP || showAsGrid()) {
+            setRecentsStyleProgress(0f);
+            return;
+        }
+        mRecentsStyleSettled = true;
+        Runnable start = () -> {
+            if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
+            if (mRecentsStyleProgress >= 1f) {
+                applyRecentsStyle();
+                return;
+            }
+            mRecentsStyleAnimator = ValueAnimator.ofFloat(mRecentsStyleProgress, 1f);
+            mRecentsStyleAnimator.setDuration(250);
+            mRecentsStyleAnimator.setInterpolator(EMPHASIZED_DECELERATE);
+            mRecentsStyleAnimator.addUpdateListener(
+                    a -> setRecentsStyleProgress((float) a.getAnimatedValue()));
+            mRecentsStyleAnimator.start();
+        };
+        if (mRecentsAnimationController != null) {
+            // The live tile follows the carousel position; replace it with a screenshot first.
+            switchToScreenshot(() -> finishRecentsAnimation(true /* toHome */,
+                    false /* shouldPip */, start));
+        } else {
+            start.run();
+        }
+    }
+
+    private void finishLiveTileForStyle() {
+        if (mRecentsStyleSettled && mRecentsAnimationController != null
+                && RecentsStyle.get(getContext()) != RecentsStyle.AOSP) {
+            switchToScreenshot(() -> finishRecentsAnimation(true /* toHome */,
+                    false /* shouldPip */, null));
+        }
+    }
+
+    /** Immediately returns the task views to the carousel layout. */
+    public void resetRecentsStyle() {
+        mRecentsStyleSettled = false;
+        if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
+        setRecentsStyleProgress(0f);
+    }
+
+    private void setRecentsStyleProgress(float progress) {
+        mRecentsStyleProgress = progress;
+        applyRecentsStyle();
+    }
+
+    private void applyRecentsStyle() {
+        List<TaskView> taskViews = new ArrayList<>();
+        for (TaskView tv : getTaskViews()) taskViews.add(tv);
+        float f = mRecentsStyleProgress;
+        if (f <= 0f || RecentsStyle.get(getContext()) == RecentsStyle.AOSP || taskViews.isEmpty()) {
+            for (TaskView tv : taskViews) tv.setStyleTransform(0f, 0f, 1f, 0f);
+            return;
+        }
+        // Child index 0 is the most recent task, whatever the layout direction.
+        taskViews.sort((a, b) -> Integer.compare(indexOfChild(a), indexOfChild(b)));
+        TaskView newest = taskViews.get(0);
+        float pageStep = taskViews.size() > 1
+                ? Math.abs(newest.getLeft() - taskViews.get(1).getLeft())
+                : newest.getWidth() + getPageSpacing();
+        if (pageStep <= 0) pageStep = 1;
+        float viewCenterX = getScrollX() + getWidth() / 2f;
+        // +1 if newer tasks are to the right.
+        float dir = taskViews.size() > 1 && newest.getLeft() < taskViews.get(1).getLeft()
+                ? -1f : 1f;
+        // Older cards slide under newer ones like a deck of cards.
+        for (TaskView tv : taskViews) {
+            float d = dir * ((tv.getLeft() + tv.getWidth() / 2f) - viewCenterX) / pageStep;
+            float tx;
+            float scale = 1f;
+            if (d < 0) {
+                tx = -d * pageStep * 0.6f * dir;
+                scale = 1f - 0.05f * Math.min(-d, 3f);
+            } else {
+                tx = -d * pageStep * 0.15f * dir;
+            }
+            // Tiny Z values only order the cards; larger ones would draw over the task menu.
+            tv.setStyleTransform(f * tx, 0f, 1f + f * (scale - 1f), f * (d + 20f) * 0.01f);
+        }
     }
 
     /**

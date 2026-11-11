@@ -217,9 +217,10 @@ constructor(
                 }
             } else {
                 val centerPageIndex: Int = recentsView.pageNearestToCenterOfScreen
-                // 2 tasks either side of the central task
-                val lowerIndex = max(0, centerPageIndex - 2)
-                val upperIndex = centerPageIndex + 2
+                // 2 tasks either side of the central task (more for grid/stack styles)
+                val range = if (RecentsStyle.get(recentsView.context) == RecentsStyle.AOSP) 2 else 7
+                val lowerIndex = max(0, centerPageIndex - range)
+                val upperIndex = centerPageIndex + range
 
                 recentsView.children
                     .drop(lowerIndex)
