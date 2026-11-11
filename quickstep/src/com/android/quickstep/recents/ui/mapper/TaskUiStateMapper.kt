@@ -85,7 +85,15 @@ object TaskUiStateMapper {
                     BackgroundOnly(taskData.backgroundColor)
                 }
             }
-            taskData.isAppLocked -> AppLocked(taskData.backgroundColor)
+            taskData.isAppLocked ->
+                AppLocked(
+                    taskData.backgroundColor,
+                    taskData.thumbnailData?.let { data ->
+                        data.thumbnail?.let {
+                            Snapshot(it, data.rotation, taskData.backgroundColor)
+                        }
+                    },
+                )
             taskData.thumbnailData?.thumbnail == null ->
                 BackgroundOnly(taskData.backgroundColor).also {
                     Log.d(

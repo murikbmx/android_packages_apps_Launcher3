@@ -18,6 +18,8 @@ package com.android.quickstep.task.thumbnail
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.graphics.Matrix
 import android.graphics.Outline
 import android.graphics.Path
@@ -140,7 +142,7 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
             is LiveTile -> drawLiveWindow()
             is SnapshotSplash -> drawSnapshotSplash(state)
             is BackgroundOnly -> drawBackground(state.backgroundColor)
-            is AppLocked -> drawAppLocked(state.backgroundColor)
+            is AppLocked -> drawAppLocked(state)
         }
     }
 
@@ -179,6 +181,7 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
         splashIcon.alpha = 0f
         splashIcon.setImageDrawable(null)
         appLockIcon.isInvisible = true
+        thumbnailView.setRenderEffect(null)
         scrimView.alpha = 0f
         alpha = 1.0f
         setBackgroundColor(Color.TRANSPARENT)
@@ -192,8 +195,18 @@ class TaskThumbnailView : FrameLayout, ViewPool.Reusable {
         liveTileView.isInvisible = false
     }
 
-    private fun drawAppLocked(@ColorInt background: Int) {
-        drawBackground(background)
+    private fun drawAppLocked(state: AppLocked) {
+        val snapshot = state.snapshot
+        if (snapshot != null) {
+            // Show the content of locked apps only as a heavy blur.
+            drawSnapshot(snapshot)
+            val radius = 40f * resources.displayMetrics.density
+            thumbnailView.setRenderEffect(
+                RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP)
+            )
+        } else {
+            drawBackground(state.backgroundColor)
+        }
         appLockIcon.isInvisible = false
     }
 
