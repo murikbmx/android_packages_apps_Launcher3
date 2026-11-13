@@ -173,6 +173,9 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
         if (finalState == OVERVIEW) {
             animateRecentsStyleIn();
         }
+        if (!finalState.isRecentsViewVisible) {
+            onRecentsHidden();
+        }
         DesktopVisibilityController.INSTANCE.get(mContainer).onLauncherStateChanged(
                 mContainer.getDisplayId(), finalState);
         if (!finalState.displayOverviewTasksAsGrid(mContainer.getDeviceProfile())) {

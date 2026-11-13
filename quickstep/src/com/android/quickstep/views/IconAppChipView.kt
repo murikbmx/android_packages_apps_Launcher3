@@ -20,6 +20,9 @@ import android.animation.ObjectAnimator
 import android.animation.RectEvaluator
 import android.animation.ValueAnimator
 import android.content.Context
+import android.text.SpannableStringBuilder
+import android.text.style.DynamicDrawableSpan
+import android.text.style.ImageSpan
 import android.graphics.Canvas
 import android.graphics.Outline
 import android.graphics.Rect
@@ -246,9 +249,41 @@ constructor(
         menuAnchorView = findViewById(R.id.icon_view_menu_anchor)
     }
 
+    private var titleText: CharSequence? = null
+    private var showLock = false
+
     fun setText(text: CharSequence?) {
-        if (text == appTitle?.text) return
-        appTitle?.text = text
+        if (text == titleText) return
+        titleText = text
+        updateTitle()
+    }
+
+    /** Shows the App Lock padlock after the app name for tasks locked in recents. */
+    fun setLocked(locked: Boolean) {
+        if (locked == showLock) return
+        showLock = locked
+        updateTitle()
+    }
+
+    private fun updateTitle() {
+        val title = appTitle ?: return
+        val text = titleText
+        if (!showLock || text == null) {
+            title.text = text
+            return
+        }
+        val size = (title.textSize * 0.9f).toInt()
+        val lock =
+            context.getDrawable(R.drawable.ic_lock_fill_40px)?.mutate()?.apply {
+                setTint(title.currentTextColor)
+                setBounds(0, 0, size, size)
+            }
+        title.text =
+            if (lock == null) text
+            else
+                SpannableStringBuilder(text)
+                    .append("  ")
+                    .append(" ", ImageSpan(lock, DynamicDrawableSpan.ALIGN_CENTER), 0)
     }
 
     fun getDrawable(): Drawable? = iconView?.drawable

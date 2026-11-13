@@ -400,13 +400,17 @@ constructor(
     private var styleTranslationX = 0f
     private var styleTranslationY = 0f
     private var styleScale = 1f
+    /** Z used by the stack style to order cards; other Z changes must stay relative to it. */
+    var styleTranslationZ = 0f
+        private set
 
     fun setStyleTransform(tx: Float, ty: Float, scale: Float, z: Float) {
         if (styleTranslationX == tx && styleTranslationY == ty && styleScale == scale &&
-            translationZ == z) return
+            styleTranslationZ == z && translationZ == z) return
         styleTranslationX = tx
         styleTranslationY = ty
         styleScale = scale
+        styleTranslationZ = z
         translationZ = z
         applyTranslationX()
         applyTranslationY()
@@ -417,6 +421,8 @@ constructor(
         set(value) {
             field = value
             applyTranslationX()
+            // The stack style follows cards reflowing into the gap of a dismissed task.
+            recentsView?.onTaskDismissTranslationChanged()
         }
 
     private var dismissTranslationY = 0f
@@ -1269,11 +1275,19 @@ constructor(
             if (state is TaskData.Data) {
                 setIcon(container.iconView, state.icon)
                 container.iconView.setText(state.title)
+                container.iconView.setLocked(RecentsLockedTasks.isLocked(context, container.task))
             } else {
                 setIcon(container.iconView, null)
                 container.iconView.setText(null)
             }
         }
+
+    /** Updates the padlock shown in the app chips after the lock state changed. */
+    fun refreshLockState() {
+        taskContainers.forEach {
+            it.iconView.setLocked(RecentsLockedTasks.isLocked(context, it.task))
+        }
+    }
 
     protected fun setIcon(iconView: IconAppChipView, icon: Drawable?) {
         with(iconView) {
@@ -1313,7 +1327,20 @@ constructor(
             )
             return
         }
-        recentsView?.resetRecentsStyle()
+        val rv = recentsView
+        if (rv != null && RecentsStyle.get(context) == RecentsStyle.STACK) {
+            // The launch animation starts from the carousel position, so an off-center card
+            // first glides to the center, then opens from there without jumping.
+            if (rv.currentPage != rv.indexOfChild(this)) {
+                rv.snapToPage(rv.indexOfChild(this), STACK_LAUNCH_SNAP_MS)
+                postDelayed({ if (isAttachedToWindow) onClick() }, STACK_LAUNCH_SNAP_MS + 30L)
+                return
+            }
+            // Spread the deck back smoothly under the expanding card instead of snapping it.
+            rv.animateRecentsStyleOut()
+        } else {
+            rv?.resetRecentsStyle()
+        }
         launchWithAnimation()
         container.statsLogManager
             .logger()
@@ -1625,6 +1652,16 @@ constructor(
             recentsView.snapToPage(recentsView.indexOfChild(this))
             return false
         }
+        // In the iOS-style stack, off-center cards are shifted under their neighbours, so a menu
+        // anchored to their chip would open half off-screen over another card. Bring the card to
+        // the front first; the next tap opens the menu.
+        if (
+            RecentsStyle.get(context) == RecentsStyle.STACK &&
+                recentsView.currentPage != recentsView.indexOfChild(this)
+        ) {
+            recentsView.snapToPage(recentsView.indexOfChild(this))
+            return false
+        }
         val menuContainer = getContainerForIconView(iconView)
 
         container.statsLogManager
@@ -1900,7 +1937,7 @@ constructor(
             splitSelectTranslationY = 0f
         }
         dismissScale = 1f
-        translationZ = 0f
+        translationZ = styleTranslationZ
         setIconVisibleForGesture(true)
         settledProgressDismiss = 1f
         setColorTint(0f, 0)
@@ -1936,6 +1973,14 @@ constructor(
 
     companion object {
         private const val TAG = "TaskView"
+
+        /**
+         * Z added to a card being swiped away. Below the 0.01 step between neighbouring stack
+         * cards, so it stays above the cards reflowing into its place but never jumps over the
+         * newer card in front of it.
+         */
+        @JvmField val DISMISS_Z_LIFT = 0.009f
+        private const val STACK_LAUNCH_SNAP_MS = 250
 
         private enum class Alpha {
             Stable,

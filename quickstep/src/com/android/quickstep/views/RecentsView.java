@@ -1526,6 +1526,12 @@ public abstract class RecentsView<
         if (enabled && RecentsStyle.get(getContext()) == RecentsStyle.STACK && !showAsGrid()) {
             // The stack keeps the centered (running) task in place, so apply it right away.
             if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
+            // Until overview settles the running task may be a live tile drawn above all task
+            // views, so newer cards must not slide over it yet (animateRecentsStyleIn releases).
+            if (!mRecentsStyleSettled) {
+                if (mStackRightHoldAnimator != null) mStackRightHoldAnimator.cancel();
+                mStackRightHold = 1f;
+            }
             setRecentsStyleProgress(1f);
         }
         updateTaskStackListenerState();
@@ -5767,7 +5773,27 @@ public abstract class RecentsView<
             return;
         }
         mRecentsStyleSettled = true;
+        // Like iOS/HyperOS: coming from an app, the previous app is centered and the current one
+        // lies on top of it at the right.
+        int runningIndex = getRunningTaskIndex();
         Runnable start = () -> {
+            // The live tile is gone now: let the newer cards slide over the centered one.
+            if (mStackRightHoldAnimator != null) mStackRightHoldAnimator.cancel();
+            if (mStackRightHold > 0f) {
+                mStackRightHoldAnimator = ValueAnimator.ofFloat(mStackRightHold, 0f);
+                mStackRightHoldAnimator.setDuration(250);
+                mStackRightHoldAnimator.setInterpolator(EMPHASIZED_DECELERATE);
+                mStackRightHoldAnimator.addUpdateListener(a -> {
+                    mStackRightHold = (float) a.getAnimatedValue();
+                    applyRecentsStyle();
+                });
+                mStackRightHoldAnimator.start();
+            }
+            if (runningIndex >= 0 && getCurrentPage() == runningIndex
+                    && runningIndex + 1 < getChildCount()
+                    && getChildAt(runningIndex + 1) instanceof TaskView) {
+                snapToPage(runningIndex + 1);
+            }
             if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
             if (mRecentsStyleProgress >= 1f) {
                 applyRecentsStyle();
@@ -5804,9 +5830,78 @@ public abstract class RecentsView<
         setRecentsStyleProgress(0f);
     }
 
+    private final List<TaskView> mTasksHiddenUntilRecentsHidden = new ArrayList<>();
+
+    /** Keeps [taskViews] invisible until recents is hidden, see {@link #onRecentsHidden()}. */
+    public void hideTasksUntilRecentsHidden(List<TaskView> taskViews) {
+        for (TaskView tv : taskViews) {
+            tv.animate().cancel();
+            tv.setAlpha(0f);
+            tv.setVisibility(INVISIBLE);
+        }
+        mTasksHiddenUntilRecentsHidden.addAll(taskViews);
+    }
+
+    /** Called once recents is fully hidden. */
+    public void onRecentsHidden() {
+        for (TaskView tv : mTasksHiddenUntilRecentsHidden) {
+            tv.animate().cancel();
+            tv.setAlpha(1f);
+            tv.setVisibility(VISIBLE);
+        }
+        mTasksHiddenUntilRecentsHidden.clear();
+    }
+
+    /** Smoothly returns the task views to the carousel layout, e.g. while a task launches. */
+    public void animateRecentsStyleOut() {
+        mRecentsStyleSettled = false;
+        if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
+        if (mRecentsStyleProgress <= 0f) return;
+        mRecentsStyleAnimator = ValueAnimator.ofFloat(mRecentsStyleProgress, 0f);
+        mRecentsStyleAnimator.setDuration(250);
+        mRecentsStyleAnimator.setInterpolator(EMPHASIZED_DECELERATE);
+        mRecentsStyleAnimator.addUpdateListener(
+                a -> setRecentsStyleProgress((float) a.getAnimatedValue()));
+        mRecentsStyleAnimator.start();
+    }
+
+    /** Called by task views when their dismiss (reflow) translation changes. */
+    public void onTaskDismissTranslationChanged() {
+        if (mRecentsStyleProgress > 0f) {
+            applyRecentsStyle();
+        }
+    }
+
     private void setRecentsStyleProgress(float progress) {
         mRecentsStyleProgress = progress;
         applyRecentsStyle();
+    }
+
+    // e^B = 2.957 and A = 0.3475 give +0.68W for the newer card and -0.23W / -0.31W for the
+    // two older ones, measured from HyperOS recordings.
+    private static final float STACK_B = 1.0842f;
+    private static final float STACK_A = 0.3475f;
+
+    private float mStackMenuOpenProgress = 0f;
+    // 1 while the newer cards must not overlap the centered one, e.g. while it is a live tile:
+    // the app window is drawn above all task views, so it would cover them.
+    private float mStackRightHold = 0f;
+    private ValueAnimator mStackRightHoldAnimator;
+
+    private float mStackMenuRight = Float.NaN;
+    private final float mStackMenuMargin =
+            8f * getResources().getDisplayMetrics().density;
+
+    /** Right edge of the open task menu, in this view's coordinates. */
+    public void setStackMenuRight(float right) {
+        mStackMenuRight = right;
+    }
+
+    /** While a task menu is open the newer cards slide back so they don't cover the menu. */
+    public void setStackMenuOpenProgress(float progress) {
+        if (mStackMenuOpenProgress == progress) return;
+        mStackMenuOpenProgress = progress;
+        if (mRecentsStyleProgress > 0f) applyRecentsStyle();
     }
 
     private void applyRecentsStyle() {
@@ -5830,17 +5925,37 @@ public abstract class RecentsView<
                 ? -1f : 1f;
         // Older cards slide under newer ones like a deck of cards.
         for (TaskView tv : taskViews) {
-            float d = dir * ((tv.getLeft() + tv.getWidth() / 2f) - viewCenterX) / pageStep;
-            float tx;
-            float scale = 1f;
-            if (d < 0) {
-                tx = -d * pageStep * 0.6f * dir;
-                scale = 1f - 0.05f * Math.min(-d, 3f);
-            } else {
-                tx = -d * pageStep * 0.15f * dir;
+            // Include the reflow translation so cards filling a dismissed task's gap restyle
+            // smoothly instead of jumping once the dismissed view is removed.
+            float left = tv.getLeft() + tv.getPrimaryDismissTranslationProperty().get(tv);
+            float d = dir * ((left + tv.getWidth() / 2f) - viewCenterX) / pageStep;
+            // HyperOS/iOS deck: card centers sit at W * A * (e^(B*d) - 1) from the screen center,
+            // so the newer card covers the right third of the centered one and older cards
+            // compress under it on the left.
+            float w = tv.getWidth();
+            float pos = w * STACK_A * ((float) Math.exp(STACK_B * Math.min(d, 3f)) - 1f);
+            float tx = (pos - d * pageStep) * dir;
+            if (d > 0) {
+                tx *= 1f - mStackRightHold;
+                if (mStackMenuOpenProgress > 0f) {
+                    if (dir > 0 && !Float.isNaN(mStackMenuRight)) {
+                        // Slide the newer card just clear of the open task menu.
+                        float cardLeft = left + tx - getScrollX();
+                        float shift = Math.max(0f, mStackMenuRight + mStackMenuMargin - cardLeft);
+                        tx += mStackMenuOpenProgress * shift;
+                    } else {
+                        tx *= 1f - mStackMenuOpenProgress;
+                    }
+                }
             }
-            // Tiny Z values only order the cards; larger ones would draw over the task menu.
-            tv.setStyleTransform(f * tx, 0f, 1f + f * (scale - 1f), f * (d + 20f) * 0.01f);
+            float scale = d < 0 ? 1f - 0.04f * Math.min(-d, 3f) : 1f;
+            // Tiny Z values only order the cards (newer on top, so the order never flips while
+            // scrolling); larger ones would draw over the task menu.
+            float z = f * (d + 20f) * 0.01f;
+            // A card being swiped away stays above the cards reflowing under it, but keeps its place
+            // under the newer card in front of it.
+            if (tv.isBeingDismissed()) z += TaskView.DISMISS_Z_LIFT;
+            tv.setStyleTransform(f * tx, 0f, 1f + f * (scale - 1f), z);
         }
     }
 
