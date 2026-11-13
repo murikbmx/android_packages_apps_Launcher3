@@ -50,7 +50,8 @@ data class DeviceProperties(
     val deviceConfiguration: DeviceConfiguration,
     val taskbarConfiguration: TaskbarConfiguration,
     val densityDpi: Int,
-    val isDefaultLandscape: Boolean
+    val isDefaultLandscape: Boolean,
+    val cutout: Rect = Rect(),
 ) {
 
     /**
@@ -106,6 +107,7 @@ data class DeviceProperties(
                     ),
                 densityDpi = windowBounds.densityDpi,
                 isDefaultLandscape = info.isDefaultLandscape,
+                cutout = info.cutout,
             )
         }
     }
