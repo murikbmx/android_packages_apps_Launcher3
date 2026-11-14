@@ -281,9 +281,11 @@ constructor(
         title.text =
             if (lock == null) text
             else
-                SpannableStringBuilder(text)
-                    .append("  ")
+                // Lock goes first so a long, ellipsized app name never hides it.
+                SpannableStringBuilder()
                     .append(" ", ImageSpan(lock, DynamicDrawableSpan.ALIGN_CENTER), 0)
+                    .append("  ")
+                    .append(text)
     }
 
     fun getDrawable(): Drawable? = iconView?.drawable

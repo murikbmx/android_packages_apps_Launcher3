@@ -143,10 +143,7 @@ constructor(
         // Rubber band: the card follows the finger less and less.
         val maxPull = lockThreshold / RESISTANCE * 1.5f
         val translation = boundToRange(pull, 0f, maxPull) * RESISTANCE
-        taskBeingDragged.secondaryDismissTranslationProperty.setValue(
-            taskBeingDragged,
-            translation * verticalFactor,
-        )
+        setPullTranslation(taskBeingDragged, translation * verticalFactor)
         val armed = translation >= lockThreshold * RESISTANCE
         if (armed != lockArmed) {
             lockArmed = armed
@@ -171,10 +168,7 @@ constructor(
                 duration = RETURN_DURATION
                 interpolator = EMPHASIZED_DECELERATE
                 addUpdateListener {
-                    taskBeingDragged.secondaryDismissTranslationProperty.setValue(
-                        taskBeingDragged,
-                        it.animatedValue as Float,
-                    )
+                    setPullTranslation(taskBeingDragged, it.animatedValue as Float)
                 }
                 addListener(
                     object : AnimatorListenerAdapter() {
@@ -186,6 +180,17 @@ constructor(
                 start()
             }
         clearState()
+    }
+
+    /** Moves the card, and the live app surface with it when the card is a live tile. */
+    private fun setPullTranslation(taskView: TaskView, value: Float) {
+        taskView.secondaryDismissTranslationProperty.setValue(taskView, value)
+        if (taskView.isRunningTask && recentsView.enableDrawingLiveTile) {
+            recentsView.runActionOnRemoteHandles { remoteTargetHandle ->
+                remoteTargetHandle.taskViewSimulator.taskSecondaryTranslation.value = value
+            }
+            recentsView.redrawLiveTile()
+        }
     }
 
     private fun clearState() {
