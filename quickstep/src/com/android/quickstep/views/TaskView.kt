@@ -417,6 +417,23 @@ constructor(
         applyScale()
     }
 
+    // Entry animation of the default recents style.
+    private var entryTranslationY = 0f
+    private var entryScale = 1f
+
+    /** Transform of the default style's entry animation, see RecentsView.animateCardsEntry. */
+    fun setEntryTransform(ty: Float, scale: Float, alpha: Float) {
+        if (entryTranslationY != ty) {
+            entryTranslationY = ty
+            applyTranslationY()
+        }
+        if (entryScale != scale) {
+            entryScale = scale
+            applyScale()
+        }
+        entryAlpha = alpha
+    }
+
     private var dismissTranslationX = 0f
         set(value) {
             field = value
@@ -521,6 +538,7 @@ constructor(
     var splitAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Split)
     private var modalAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Modal)
     var animateToIconAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.AnimateToIcon)
+    private var entryAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Entry)
 
     var shouldShowScreenshot = false
         get() = !isRunningTask || field
@@ -1831,6 +1849,7 @@ constructor(
         val scale =
             persistentScale *
                 styleScale *
+                entryScale *
                 dismissScale *
                 animateToIconScale *
                 Utilities.mapRange(modalness, 1f, modalScale)
@@ -1854,6 +1873,7 @@ constructor(
     private fun applyTranslationY() {
         translationY =
             styleTranslationY +
+                entryTranslationY +
                 dismissTranslationY +
                 taskOffsetTranslationY +
                 taskResistanceTranslationY +
@@ -1988,6 +2008,7 @@ constructor(
             Split,
             Modal,
             AnimateToIcon,
+            Entry,
         }
 
         private enum class SettledProgress {

@@ -489,6 +489,8 @@ public abstract class RecentsView<
 
     // OverScroll constants
     private static final int OVERSCROLL_PAGE_SNAP_ANIMATION_DURATION = 270;
+    // Minimum settle duration after a fling with spring recents animations (default style).
+    private static final int SOFT_PAGE_SNAP_ANIMATION_DURATION = 420;
 
     private static final float SIGNIFICANT_MOVE_SCREEN_WIDTH_PERCENTAGE = 0.15f;
 
@@ -1728,7 +1730,8 @@ public abstract class RecentsView<
 
             mScroller.setFinalX(pageSnapped);
             // Ensure the scroll/snap doesn't happen too fast;
-            int extraScrollDuration = OVERSCROLL_PAGE_SNAP_ANIMATION_DURATION
+            int extraScrollDuration = (isSoftSnapEnabled()
+                    ? SOFT_PAGE_SNAP_ANIMATION_DURATION : OVERSCROLL_PAGE_SNAP_ANIMATION_DURATION)
                     - mScroller.getDuration();
             if (extraScrollDuration > 0) {
                 mScroller.extendDuration(extraScrollDuration);
@@ -1819,6 +1822,10 @@ public abstract class RecentsView<
             mPendingAnimation.addEndListener(
                     success -> applyLoadPlan(finalTaskGroups, taskListChangeId));
             return;
+        }
+        if (mPendingCardsEntry) {
+            // Animate the cards in once they exist.
+            post(this::maybeStartPendingCardsEntry);
         }
 
         if (taskGroups == null) {
@@ -2507,6 +2514,7 @@ public abstract class RecentsView<
     public void reset() {
         Log.d(TAG, "reset - mEnableDrawingLiveTile: " + mEnableDrawingLiveTile
                 + ", mRecentsAnimationController: " + mRecentsAnimationController);
+        cancelCardsEntry();
         setCurrentTask(-1);
         mCurrentPageScrollDiff = 0;
         mIgnoreResetTaskId = -1;
@@ -5759,6 +5767,97 @@ public abstract class RecentsView<
         super.onScrollChanged(l, t, oldl, oldt);
         dispatchScrollChanged();
         applyRecentsStyle();
+    }
+
+    // ---- Spring animations of the default recents style ----
+    private static final long ENTRY_DURATION = 450;
+    private static final long ENTRY_STAGGER = 45;
+    private static final int ENTRY_MAX_STAGGER_STEPS = 3;
+    private static final float ENTRY_SCALE = 0.9f;
+    private static final float ENTRY_OFFSET = 0.06f;
+    private static final android.view.animation.Interpolator ENTRY_INTERPOLATOR =
+            com.android.launcher3.anim.SpringInterpolators.underDamped(0.7f);
+    private ValueAnimator mEntryAnimator;
+    // Set while the entry animation waits for the task list to load.
+    private boolean mPendingCardsEntry;
+
+    private boolean isSpringStyleEnabled() {
+        return RecentsStyle.isSpringAnimEnabled(getContext())
+                && RecentsStyle.get(getContext()) == RecentsStyle.AOSP && !showAsGrid();
+    }
+
+    private boolean isSoftSnapEnabled() {
+        return !isSplitSelectionActive() && isSpringStyleEnabled();
+    }
+
+    /**
+     * Cards rise and grow into place one after another, starting with the centered one. Used when
+     * recents opens from home, where no app window flies into a card.
+     */
+    public void animateCardsEntry() {
+        cancelCardsEntry();
+        if (!isSpringStyleEnabled()) return;
+        if (!mRecentsModel.isTaskListValid(mAppliedTaskListChangeId)) {
+            mPendingCardsEntry = true;
+            return;
+        }
+        startCardsEntry();
+    }
+
+    private void maybeStartPendingCardsEntry() {
+        if (!mPendingCardsEntry) return;
+        mPendingCardsEntry = false;
+        if (mOverviewStateEnabled && isSpringStyleEnabled()) startCardsEntry();
+    }
+
+    private void startCardsEntry() {
+        List<TaskView> taskViews = new ArrayList<>();
+        for (TaskView tv : getTaskViews()) taskViews.add(tv);
+        if (taskViews.isEmpty()) return;
+        int current = getCurrentPage();
+        long[] delays = new long[taskViews.size()];
+        long maxDelay = 0;
+        for (int i = 0; i < taskViews.size(); i++) {
+            int steps = Math.min(Math.abs(indexOfChild(taskViews.get(i)) - current),
+                    ENTRY_MAX_STAGGER_STEPS);
+            delays[i] = steps * ENTRY_STAGGER;
+            maxDelay = Math.max(maxDelay, delays[i]);
+        }
+        final long total = ENTRY_DURATION + maxDelay;
+        final float offset = getHeight() * ENTRY_OFFSET;
+        mEntryAnimator = ValueAnimator.ofFloat(0f, 1f);
+        mEntryAnimator.setDuration(total);
+        mEntryAnimator.setInterpolator(LINEAR);
+        ValueAnimator.AnimatorUpdateListener update = a -> {
+            float elapsed = a.getAnimatedFraction() * total;
+            for (int i = 0; i < taskViews.size(); i++) {
+                float t = Utilities.boundToRange(
+                        (elapsed - delays[i]) / ENTRY_DURATION, 0f, 1f);
+                float p = ENTRY_INTERPOLATOR.getInterpolation(t);
+                taskViews.get(i).setEntryTransform((1f - p) * offset,
+                        ENTRY_SCALE + (1f - ENTRY_SCALE) * p,
+                        Utilities.boundToRange(t * 3f, 0f, 1f));
+            }
+        };
+        mEntryAnimator.addUpdateListener(update);
+        mEntryAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                for (TaskView tv : taskViews) tv.setEntryTransform(0f, 1f, 1f);
+                if (mEntryAnimator == animation) mEntryAnimator = null;
+            }
+        });
+        // Apply the start state right away so no card shows at full size for a frame.
+        update.onAnimationUpdate(mEntryAnimator);
+        mEntryAnimator.start();
+    }
+
+    /** Stops the entry animation and puts the cards in their final place. */
+    public void cancelCardsEntry() {
+        mPendingCardsEntry = false;
+        if (mEntryAnimator != null) {
+            mEntryAnimator.cancel(); // onAnimationEnd resets the cards
+        }
     }
 
     // ---- Custom recents style: iOS-like card stack ----

@@ -32,6 +32,15 @@ object RecentsStyle {
         if (LauncherPrefs.get(context).get(LauncherPrefs.RECENTS_STYLE).toIntOrNull() == STACK) STACK
         else AOSP
 
+    /** Spring entry / scroll animations, only used by the default style. */
+    @JvmStatic
+    fun isSpringAnimEnabled(context: Context): Boolean =
+        try {
+            LauncherPrefs.get(context).get(LauncherPrefs.RECENTS_SPRING_ANIM)
+        } catch (ignored: IllegalStateException) {
+            false
+        }
+
     @JvmStatic
     fun isDarkTheme(context: Context): Boolean =
         (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==

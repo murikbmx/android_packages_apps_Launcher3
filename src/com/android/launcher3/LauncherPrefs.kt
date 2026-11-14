@@ -368,6 +368,8 @@ constructor(@ApplicationContext private val encryptedContext: Context) {
 
         @JvmField val APP_SPRING_ANIM = backedUpItem("pref_app_spring_anim", true)
 
+        @JvmField val RECENTS_SPRING_ANIM = backedUpItem("pref_recents_spring_anim", true)
+
         @JvmStatic
         fun isHotseatQsbEnabled(context: Context): Boolean {
             return try {
