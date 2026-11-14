@@ -117,4 +117,6 @@
     <!-- Animations -->
     <string name="pref_icon_press_anim_title">Icon press animation</string>
     <string name="pref_icon_press_anim_summary">Icons shrink slightly when touched and spring back</string>
+    <string name="pref_app_spring_anim_title">Spring app animations</string>
+    <string name="pref_app_spring_anim_summary">Apps open out of their icon on a spring curve and the icon bounces when the app closes</string>
 </resources>

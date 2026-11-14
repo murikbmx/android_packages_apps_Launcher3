@@ -50,6 +50,7 @@ import com.android.launcher3.InsettableFrameLayout;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
+import com.android.launcher3.anim.AppSpringAnimations;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.graphics.IconLoader;
@@ -79,8 +80,14 @@ public class FloatingIconView extends FrameLayout implements
 
     public static final float SHAPE_PROGRESS_DURATION = 0.10f;
     private static final RectF sTmpRectF = new RectF();
+    private static final float LAND_MIN_PROGRESS = 0.85f;
+    private static final float LAND_SLOP_DP = 3f;
 
     private Runnable mEndRunnable;
+    // Reveals the original icon and plays the landing bounce as soon as a closing app reaches
+    // its icon, instead of waiting for the sub-pixel tail of the closing spring.
+    private @Nullable Runnable mLandRunnable;
+    private boolean mLanded;
     private CancellationSignal mLoadIconSignal;
 
     private final Launcher mLauncher;
@@ -170,6 +177,18 @@ public class FloatingIconView extends FrameLayout implements
         // FIV hasn't fully laid out. During those frames, hide this FIV and continue drawing the
         // TaskView directly while transforming it in the place of this FIV. However, if we fade
         // the TaskView at all, we need to display this FIV regardless.
+        if (mLanded) {
+            setAlpha(0f);
+            return;
+        }
+        if (!isOpening && mLandRunnable != null && hasReachedTarget(rect, progress)) {
+            mLanded = true;
+            setAlpha(0f);
+            Runnable land = mLandRunnable;
+            mLandRunnable = null;
+            land.run();
+            return;
+        }
         setAlpha(isLaidOut() || taskViewDrawAlpha < 255 ? alpha : 0f);
         mClipIconView.update(rect, progress, shapeProgressStart, cornerRadius, isOpening, this,
                 mLauncher.getDeviceProfile(), taskViewDrawAlpha);
@@ -189,6 +208,14 @@ public class FloatingIconView extends FrameLayout implements
      */
     public void setOverlayArtist(ClipIconView.TaskViewArtist taskViewArtist) {
         mClipIconView.setTaskViewArtist(taskViewArtist);
+    }
+
+    private boolean hasReachedTarget(RectF rect, float progress) {
+        if (mPositionOut == null || progress < LAND_MIN_PROGRESS) return false;
+        float slop = LAND_SLOP_DP * getResources().getDisplayMetrics().density;
+        return Math.abs(rect.centerX() - mPositionOut.centerX()) < slop
+                && Math.abs(rect.centerY() - mPositionOut.centerY()) < slop
+                && Math.abs(rect.width() - mPositionOut.width()) < slop;
     }
 
     @Override
@@ -665,9 +692,10 @@ public class FloatingIconView extends FrameLayout implements
         dragLayer.addView(view.mListenerView);
         view.mListenerView.setListener(view::fastFinish);
 
-        view.mEndRunnable = () -> {
-            view.mEndRunnable = null;
-
+        final boolean springLanding = !isOpening
+                && originalView instanceof BubbleTextView
+                && AppSpringAnimations.isEnabled(launcher);
+        final Runnable reveal = () -> {
             if (view.mFadeOutView != null) {
                 view.mFadeOutView.postCallback((foundView -> {
                     foundView.setAlpha(1f);
@@ -677,13 +705,22 @@ public class FloatingIconView extends FrameLayout implements
                     }
                 }));
             }
-
             if (hideOriginal) {
                 view.updateViewsVisibility(true /* isVisible */);
-                view.finish(dragLayer);
-            } else {
-                view.finish(dragLayer);
             }
+            if (springLanding) {
+                AppSpringAnimations.playLanding((BubbleTextView) originalView);
+            }
+        };
+        view.mLanded = false;
+        view.mLandRunnable = springLanding ? reveal : null;
+        view.mEndRunnable = () -> {
+            view.mEndRunnable = null;
+            if (!view.mLanded) {
+                view.mLandRunnable = null;
+                reveal.run();
+            }
+            view.finish(dragLayer);
         };
 
         // Must be called after matchPositionOf so that we know what size to load.
@@ -731,6 +768,8 @@ public class FloatingIconView extends FrameLayout implements
         }
         mLoadIconSignal = null;
         mEndRunnable = null;
+        mLandRunnable = null;
+        mLanded = false;
         mFinalDrawableBounds.setEmpty();
         mIsOpening = false;
         mPositionOut = null;

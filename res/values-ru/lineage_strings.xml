@@ -75,4 +75,6 @@
     <string name="pref_recents_style_title">Стиль недавних приложений</string>
     <string name="pref_icon_press_anim_title">Анимация нажатия на значки</string>
     <string name="pref_icon_press_anim_summary">Значки слегка сжимаются при касании и пружинят обратно</string>
+    <string name="pref_app_spring_anim_title">Пружинные анимации приложений</string>
+    <string name="pref_app_spring_anim_summary">Приложения раскрываются из значка по пружинной кривой, а при закрытии значок подпрыгивает</string>
 </resources>

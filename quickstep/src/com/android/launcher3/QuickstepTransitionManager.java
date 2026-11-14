@@ -127,6 +127,7 @@ import com.android.internal.util.LatencyTracker;
 import com.android.launcher3.DeviceProfile.OnDeviceProfileChangeListener;
 import com.android.launcher3.LauncherAnimationRunner.RemoteAnimationFactory;
 import com.android.launcher3.anim.AnimationSuccessListener;
+import com.android.launcher3.anim.AppSpringAnimations;
 import com.android.launcher3.anim.AnimatorListeners;
 import com.android.launcher3.compat.AccessibilityManagerCompat;
 import com.android.launcher3.desktop.DesktopAppLaunchTransition.AppLaunchType;
@@ -921,7 +922,13 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
 
         AnimatorSet animatorSet = new AnimatorSet();
         ValueAnimator appAnimator = ValueAnimator.ofFloat(0, 1);
-        appAnimator.setDuration(APP_LAUNCH_DURATION);
+        final boolean springAnim = AppSpringAnimations.isEnabled(mLauncher);
+        final Interpolator openingInterpolator = springAnim
+                ? AppSpringAnimations.OPEN_INTERPOLATOR : mOpeningInterpolator;
+        final Interpolator openingXInterpolator = springAnim
+                ? AppSpringAnimations.OPEN_X_INTERPOLATOR : mOpeningXInterpolator;
+        appAnimator.setDuration(springAnim
+                ? AppSpringAnimations.OPEN_DURATION : APP_LAUNCH_DURATION);
         appAnimator.setInterpolator(LINEAR);
         appAnimator.addListener(floatingView);
         appAnimator.addListener(new AnimatorListenerAdapter() {
@@ -961,8 +968,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 : 0f;
         final float finalShadowRadius = appTargetsAreTranslucent ? 0 : mMaxShadowRadius;
 
-        MultiValueUpdateListener listener = new MultiValueUpdateListener(mOpeningInterpolator) {
-            FloatProp mDx = new FloatProp(0, prop.dX, mOpeningXInterpolator);
+        MultiValueUpdateListener listener = new MultiValueUpdateListener(openingInterpolator) {
+            FloatProp mDx = new FloatProp(0, prop.dX, openingXInterpolator);
             FloatProp mDy = new FloatProp(0, prop.dY);
 
             FloatProp mIconScaleToFitScreen = new FloatProp(prop.initialAppIconScale,
