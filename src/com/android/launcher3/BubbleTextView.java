@@ -86,6 +86,7 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import com.android.launcher3.accessibility.BaseAccessibilityDelegate;
 import com.android.launcher3.anim.AnimatedFloat;
+import com.android.launcher3.anim.IconPressAnimations;
 import com.android.launcher3.apppairs.AppPairIcon;
 import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.dragndrop.DragOptions.PreDragCondition;
@@ -820,6 +821,17 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     public void refreshDrawableState() {
         if (!mIgnorePressedStateChange) {
             super.refreshDrawableState();
+        }
+    }
+
+    @Override
+    protected void drawableStateChanged() {
+        FastBitmapDrawable icon = mIcon;
+        boolean wasPressed = icon != null && icon.isPressed;
+        super.drawableStateChanged();
+        if (icon != null && icon == mIcon && icon.isPressed != wasPressed
+                && mDisplay != DISPLAY_TASKBAR && IconPressAnimations.isEnabled(getContext())) {
+            IconPressAnimations.animatePressedChanged(icon);
         }
     }
 

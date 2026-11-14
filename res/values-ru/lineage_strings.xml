@@ -73,4 +73,6 @@
     <string name="trust_apps_info_protected">Для открытия защищенных приложений всегда требуется аутентификация, их уведомления скрываются, а в недавних приложениях они показываются заблокированными</string>
 
     <string name="pref_recents_style_title">Стиль недавних приложений</string>
+    <string name="pref_icon_press_anim_title">Анимация нажатия на значки</string>
+    <string name="pref_icon_press_anim_summary">Значки слегка сжимаются при касании и пружинят обратно</string>
 </resources>
