@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="pref_themed_icons_title">Использовать значки темы в панели приложений</string>
     <string name="pref_themed_icons_summary">Использовать значки темы на главном экране</string>
     <string name="pebble_shape_title">Галька</string>
@@ -79,4 +79,12 @@
     <string name="pref_app_spring_anim_summary">Приложения раскрываются из значка по пружинной кривой, а при закрытии значок подпрыгивает</string>
     <string name="pref_recents_spring_anim_title">Пружинные анимации недавних приложений</string>
     <string name="pref_recents_spring_anim_summary">Карточки плавно поднимаются при открытии с рабочего стола и мягче останавливаются после прокрутки. Только для стиля «Default»</string>
+    <string name="pref_edge_sidebar_title">Боковая панель</string>
+    <string name="pref_edge_sidebar_summary">Тонкая ручка на левом краю: свайп вправо открывает ярлыки приложений. На планшетах приложения открываются в мини-окнах</string>
+
+    <string name="pref_recents_ram_info_title">Память в недавних</string>
+    <string name="pref_recents_ram_info_summary">Показывать свободную память под кнопками недавних и сколько освобождено после «Очистить всё»</string>
+    <string name="recents_ram_info">Свободно <xliff:g id="free">%1$s</xliff:g> ГБ из <xliff:g id="total">%2$s</xliff:g> ГБ</string>
+    <string name="recents_ram_freed">Освобождено <xliff:g id="size">%1$s</xliff:g> ГБ</string>
+    <string name="recents_ram_freed_mb">Освобождено <xliff:g id="size">%1$d</xliff:g> МБ</string>
 </resources>

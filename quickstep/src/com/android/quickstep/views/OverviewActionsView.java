@@ -28,6 +28,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
@@ -151,6 +152,10 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
      */
     private Button mSaveAppPairButton;
 
+    /** Free / total memory line under the action buttons. */
+    private TextView mRamInfo;
+    private boolean mRamInfoShown;
+
     @ActionsHiddenFlags
     private int mHiddenFlags;
 
@@ -216,6 +221,39 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         mSplitButton = findViewById(R.id.action_split);
         mSplitButton.setOnClickListener(this);
         mSaveAppPairButton.setOnClickListener(this);
+
+        mRamInfo = findViewById(R.id.recents_ram_info);
+        // Follow the action buttons' alpha and visibility, refreshing the numbers each time the
+        // buttons appear.
+        getViewTreeObserver().addOnPreDrawListener(() -> {
+            syncRamInfo();
+            return true;
+        });
+    }
+
+    private void syncRamInfo() {
+        if (mRamInfo == null) {
+            return;
+        }
+        boolean enabled = RecentsRamInfo.isEnabled(getContext());
+        float alpha = mActionButtons.getAlpha();
+        boolean shown = enabled && mActionButtons.getVisibility() == VISIBLE && alpha > 0f;
+        if (shown && !mRamInfoShown) {
+            String text = RecentsRamInfo.freeText(getContext());
+            if (text == null) {
+                shown = false;
+            } else {
+                mRamInfo.setText(text);
+            }
+        }
+        mRamInfoShown = shown;
+        int visibility = shown ? VISIBLE : GONE;
+        if (mRamInfo.getVisibility() != visibility) {
+            mRamInfo.setVisibility(visibility);
+        }
+        if (shown && mRamInfo.getAlpha() != alpha) {
+            mRamInfo.setAlpha(alpha);
+        }
     }
 
     /**
@@ -240,6 +278,7 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         } else if (id == R.id.action_save_app_pair) {
             mCallbacks.onSaveAppPair();
         } else if (id == R.id.action_clear_all) {
+            RecentsRamInfo.onClearAll(getContext());
             mCallbacks.onClearAllTasksRequested();
         }
     }
@@ -402,6 +441,19 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
     public void updateVerticalMargin(NavigationMode mode) {
         updateActionBarPosition(mActionButtons);
         updateActionBarPosition(mSaveAppPairButton);
+        updateRamInfoPosition();
+    }
+
+    /** Places the memory line just under the action buttons. */
+    private void updateRamInfoPosition() {
+        if (mDp == null || mRamInfo == null) {
+            return;
+        }
+        LayoutParams params = (LayoutParams) mRamInfo.getLayoutParams();
+        params.topMargin = mDp.getOverviewProfile().getActionsTopMarginPx()
+                + mDp.getOverviewProfile().getActionsHeight()
+                + getResources().getDimensionPixelSize(R.dimen.recents_ram_info_spacing);
+        mRamInfo.setLayoutParams(params);
     }
 
     /** Positions actions buttons according to device settings and insets. */
