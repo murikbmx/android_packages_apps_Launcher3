@@ -82,6 +82,13 @@
         android:persistent="true" />
 
     <SwitchPreferenceCompat
+        android:key="pref_clear_all_wave"
+        android:title="@string/pref_clear_all_wave_title"
+        android:summary="@string/pref_clear_all_wave_summary"
+        android:defaultValue="true"
+        android:persistent="true" />
+
+    <SwitchPreferenceCompat
         android:key="pref_edge_sidebar"
         android:title="@string/pref_edge_sidebar_title"
         android:summary="@string/pref_edge_sidebar_summary"

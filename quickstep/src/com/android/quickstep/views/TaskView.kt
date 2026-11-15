@@ -539,6 +539,7 @@ constructor(
     private var modalAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Modal)
     var animateToIconAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.AnimateToIcon)
     private var entryAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Entry)
+    var clearAllAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.ClearAll)
 
     var shouldShowScreenshot = false
         get() = !isRunningTask || field
@@ -1957,6 +1958,7 @@ constructor(
             splitSelectTranslationY = 0f
         }
         dismissScale = 1f
+        clearAllAlpha = 1f
         translationZ = styleTranslationZ
         setIconVisibleForGesture(true)
         settledProgressDismiss = 1f
@@ -2009,6 +2011,7 @@ constructor(
             Modal,
             AnimateToIcon,
             Entry,
+            ClearAll,
         }
 
         private enum class SettledProgress {

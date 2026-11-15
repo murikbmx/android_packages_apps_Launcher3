@@ -41,6 +41,15 @@ object RecentsStyle {
             false
         }
 
+    /** Cards fly away one after another on "Clear all", in both styles. */
+    @JvmStatic
+    fun isClearAllWaveEnabled(context: Context): Boolean =
+        try {
+            LauncherPrefs.get(context).get(LauncherPrefs.CLEAR_ALL_WAVE)
+        } catch (ignored: IllegalStateException) {
+            false
+        }
+
     @JvmStatic
     fun isDarkTheme(context: Context): Boolean =
         (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
