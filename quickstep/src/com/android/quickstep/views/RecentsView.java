@@ -1906,6 +1906,7 @@ public abstract class RecentsView<
 
         // Move Desktop Tasks to the end of the list
         taskGroups = mUtils.sortDesktopTasksToFront(taskGroups);
+        taskGroups = sortRunningTaskNewestForStack(taskGroups, runningTaskIds);
 
         if (mAddDesktopButton != null) {
             // Add `mAddDesktopButton` as the first child.
@@ -2683,6 +2684,10 @@ public abstract class RecentsView<
             updateSizeAndPadding();
         }
 
+        if (isStackStyle() && groupedTaskInfo != null && groupedTaskInfo.getTaskInfo1() != null
+                && !groupedTaskInfo.isBaseType(GroupedTaskInfo.TYPE_DESK)) {
+            mStackFrontTaskId = groupedTaskInfo.getTaskInfo1().taskId;
+        }
         showCurrentTask(groupedTaskInfo, "onGestureAnimationStart");
         setEnableFreeScroll(false);
         setEnableDrawingLiveTile(false);
@@ -5860,6 +5865,71 @@ public abstract class RecentsView<
         }
     }
 
+    private boolean isStackStyle() {
+        return RecentsStyle.get(getContext()) == RecentsStyle.STACK && !showAsGrid();
+    }
+
+    /**
+     * The stack always shows the app the gesture starts from as the newest card, like coming
+     * from the most recent app. After a quick switch the system keeps the old task order for a
+     * while, which would leave the previously used app as a separate card on the right.
+     */
+    private List<GroupTask> sortRunningTaskNewestForStack(List<GroupTask> taskGroups,
+            @Nullable int[] runningTaskIds) {
+        if (!isStackStyle() || taskGroups.size() < 2 || mStackFrontTaskId == INVALID_TASK_ID) {
+            return taskGroups;
+        }
+        int last = taskGroups.size() - 1;
+        // The last group is the most recent one (views are added from the end of the list).
+        if (taskGroups.get(last).containsTask(mStackFrontTaskId)) {
+            // The system order caught up.
+            mStackFrontTaskId = INVALID_TASK_ID;
+            return taskGroups;
+        }
+        for (int i = 0; i < last; i++) {
+            GroupTask group = taskGroups.get(i);
+            if (group.taskViewType != TaskViewType.DESKTOP
+                    && group.containsTask(mStackFrontTaskId)) {
+                List<GroupTask> sorted = new ArrayList<>(taskGroups);
+                sorted.remove(i);
+                sorted.add(group);
+                return sorted;
+            }
+        }
+        return taskGroups;
+    }
+
+    /** Task shown as the newest card of the stack, see {@link #onGestureAnimationStart}. */
+    private int mStackFrontTaskId = INVALID_TASK_ID;
+
+    /**
+     * Moves the card of the app the gesture started from to the newest position, once the live
+     * tile is gone (moving it during the gesture breaks attaching recents to the app window).
+     * Returns the card, or null if nothing had to move.
+     */
+    @Nullable
+    private TaskView moveStackFrontTaskToFront() {
+        if (!isStackStyle() || mStackFrontTaskId == INVALID_TASK_ID) return null;
+        TaskView tv = getTaskViewByTaskId(mStackFrontTaskId);
+        TaskView first = getFirstTaskView();
+        if (tv == null || first == null || tv == first || tv instanceof DesktopTaskView) {
+            return null;
+        }
+        int targetIndex = indexOfChild(first);
+        boolean wasCurrent = mCurrentPage == indexOfChild(tv);
+        mMovingTaskView = tv;
+        removeView(tv);
+        mMovingTaskView = null;
+        tv.resetPersistentViewTransforms();
+        addView(tv, targetIndex);
+        updateTaskSize();
+        measure(makeMeasureSpec(getMeasuredWidth(), EXACTLY),
+                makeMeasureSpec(getMeasuredHeight(), EXACTLY));
+        layout(getLeft(), getTop(), getRight(), getBottom());
+        if (wasCurrent) setCurrentPage(targetIndex);
+        return tv;
+    }
+
     // ---- Custom recents style: iOS-like card stack ----
     private float mRecentsStyleProgress = 0f;
     private ValueAnimator mRecentsStyleAnimator;
@@ -5888,10 +5958,17 @@ public abstract class RecentsView<
                 });
                 mStackRightHoldAnimator.start();
             }
-            if (runningIndex >= 0 && getCurrentPage() == runningIndex
-                    && runningIndex + 1 < getChildCount()
-                    && getChildAt(runningIndex + 1) instanceof TaskView) {
-                snapToPage(runningIndex + 1);
+            int frontIndex = runningIndex;
+            TaskView moved = moveStackFrontTaskToFront();
+            if (moved != null) {
+                frontIndex = indexOfChild(moved);
+                setCurrentPage(frontIndex);
+                applyRecentsStyle();
+            }
+            if (frontIndex >= 0 && getCurrentPage() == frontIndex
+                    && frontIndex + 1 < getChildCount()
+                    && getChildAt(frontIndex + 1) instanceof TaskView) {
+                snapToPage(frontIndex + 1);
             }
             if (mRecentsStyleAnimator != null) mRecentsStyleAnimator.cancel();
             if (mRecentsStyleProgress >= 1f) {
@@ -6008,7 +6085,10 @@ public abstract class RecentsView<
         for (TaskView tv : getTaskViews()) taskViews.add(tv);
         float f = mRecentsStyleProgress;
         if (f <= 0f || RecentsStyle.get(getContext()) == RecentsStyle.AOSP || taskViews.isEmpty()) {
-            for (TaskView tv : taskViews) tv.setStyleTransform(0f, 0f, 1f, 0f);
+            for (TaskView tv : taskViews) {
+                tv.setStyleTransform(0f, 0f, 1f, 0f);
+                tv.setStyleAlpha(1f);
+            }
             return;
         }
         // Child index 0 is the most recent task, whatever the layout direction.
@@ -6047,6 +6127,11 @@ public abstract class RecentsView<
                     }
                 }
             }
+            // While held (live tile), newer cards would sit apart at carousel spacing, leaving a
+            // gap after the centered card (e.g. after a quick switch). Hide them like when
+            // coming from the newest app; they fade in as they slide onto the stack.
+            float hide = mStackRightHold * Math.max(0f, Math.min(1f, (d - 0.5f) / 0.3f));
+            tv.setStyleAlpha(1f - hide);
             float scale = d < 0 ? 1f - 0.04f * Math.min(-d, 3f) : 1f;
             // Tiny Z values only order the cards (newer on top, so the order never flips while
             // scrolling); larger ones would draw over the task menu.

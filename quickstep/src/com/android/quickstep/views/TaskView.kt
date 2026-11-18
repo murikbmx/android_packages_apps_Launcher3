@@ -535,6 +535,8 @@ constructor(
     private val taskViewAlpha = MultiValueAlpha(this, Alpha.entries.size)
     protected var stableAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Stable)
     var attachAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Attach)
+    /** Alpha of the stack recents style, see RecentsView.applyRecentsStyle. */
+    var styleAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Style)
     var splitAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Split)
     private var modalAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Modal)
     var animateToIconAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.AnimateToIcon)
@@ -2012,6 +2014,7 @@ constructor(
             AnimateToIcon,
             Entry,
             ClearAll,
+            Style,
         }
 
         private enum class SettledProgress {
