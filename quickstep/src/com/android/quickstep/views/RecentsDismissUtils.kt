@@ -18,6 +18,8 @@ package com.android.quickstep.views
 
 import android.animation.AnimatorSet
 import android.app.ActivityTaskManager.INVALID_TASK_ID
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import androidx.core.animation.addListener
@@ -333,13 +335,20 @@ constructor(
 
     /** Dismisses all */
     fun dismissAllTasks() {
-        val allDismissSprings =
-            recentsView.mUtils.taskViews
-                .reversed()
-                .filter { taskView -> recentsView.isTaskViewVisible(taskView) }
-                .mapNotNull { createDismissedTaskViewSpringAnimation(it) }
-        SpringSet(SpringAnimation(FloatValueHolder()).setSpring(SpringForce(1f)))
-            .playTogether(allDismissSprings)
+        val lockedTaskViews =
+            recentsView.mUtils.taskViews.filter {
+                it !is DesktopTaskView && RecentsLockedTasks.isLocked(recentsView.context, it)
+            }
+        if (lockedTaskViews.isNotEmpty()) {
+            dismissUnlockedTasks(lockedTaskViews)
+            return
+        }
+        // In the iOS stack, cards tucked under the front ones count as invisible but are
+        // revealed while the others fly away, so animate all of them.
+        val stack = RecentsStyle.get(recentsView.context) == RecentsStyle.STACK
+        createClearAllSpringSet(recentsView.mUtils.taskViews.reversed()) { taskView ->
+                stack || recentsView.isTaskViewVisible(taskView)
+            }
             .addEndListener {
                 with(recentsView) {
                     // Remove desktops first, since desks can be empty (so they have no recent
@@ -352,6 +361,144 @@ constructor(
                     finishRecentsAnimation(/* toHome */ true, /* shouldPip */ false) {
                         uiHelperExecutor.execute { activityManagerWrapper.removeAllRecentTasks() }
                         removeAllTaskViews()
+                        if (!mUtils.isInDesktopFirstMode()) {
+                            startHome()
+                        }
+                        onDismissAnimationEnds()
+                        InteractionJankMonitorWrapper.end(Cuj.CUJ_LAUNCHER_OVERVIEW_CLEAR_ALL)
+                    }
+                }
+            }
+            .start()
+    }
+
+    /**
+     * Dismiss springs of "Clear all" for [taskViews], ordered from the clear all button. Stock
+     * plays them all at once; with the wave pref, the cards on screen leave one after another
+     * from right to left and fade, and the cards off screen leave together with the last of them.
+     */
+    private fun createClearAllSpringSet(
+        taskViews: List<TaskView>,
+        shouldAnimate: (TaskView) -> Boolean,
+    ): SpringSet {
+        val springSet = SpringSet(SpringAnimation(FloatValueHolder()).setSpring(SpringForce(1f)))
+        val animated = taskViews.filter(shouldAnimate)
+        if (!RecentsStyle.isClearAllWaveEnabled(recentsView.context)) {
+            return springSet.playTogether(
+                animated.mapNotNull { createDismissedTaskViewSpringAnimation(it) }
+            )
+        }
+        // Cards tucked under the front ones of the iOS stack are on screen too.
+        val stack =
+            RecentsStyle.get(recentsView.context) == RecentsStyle.STACK && !recentsView.showAsGrid()
+        val onScreen = { taskView: TaskView ->
+            if (stack) {
+                abs(recentsView.indexOfChild(taskView) - recentsView.nextPage) <=
+                    CLEAR_ALL_WAVE_STACK_RANGE
+            } else {
+                recentsView.isTaskViewVisible(taskView)
+            }
+        }
+        // The wave runs across the screen from the rightmost card to the left one by one; in the
+        // stack that is from the card on top down to the ones tucked under it.
+        val location = IntArray(2)
+        val centerX = { taskView: TaskView ->
+            taskView.getLocationOnScreen(location)
+            location[0] + taskView.width * taskView.scaleX / 2f
+        }
+        val order =
+            animated
+                .filter(onScreen)
+                .sortedWith(
+                    compareByDescending<TaskView> { centerX(it) }
+                        .thenBy { recentsView.indexOfChild(it) }
+                )
+        val lastStep = max(order.size - 1, 0)
+        // Create all springs (which marks the cards as being dismissed) up front: any restyle of
+        // the stack mid wave then lifts every leaving card alike, so the Z order can't flip.
+        val delayedSprings =
+            animated.mapNotNull { taskView ->
+                val dismissedTaskData = getDefaultDismissedTaskData(taskView)
+                val spring =
+                    createDismissedTaskViewSpringAnimation(
+                        taskView,
+                        isDismissing = true,
+                        dismissedTaskData,
+                    ) ?: return@mapNotNull null
+                // The live tile is drawn by the app window, which can't fade with the card.
+                val fadeLength =
+                    abs(dismissedTaskData.dismissLength) * CLEAR_ALL_WAVE_FADE_FRACTION
+                if (
+                    fadeLength > 0f &&
+                        !(taskView.isRunningTask && recentsView.enableDrawingLiveTile)
+                ) {
+                    spring.addUpdateListener { _, value, _ ->
+                        taskView.clearAllAlpha = (1f - abs(value) / fadeLength).coerceIn(0f, 1f)
+                    }
+                }
+                val rank = order.indexOf(taskView)
+                val delay = CLEAR_ALL_WAVE_STAGGER_MS * (if (rank >= 0) rank else lastStep)
+                springSet.trackSpring(spring)
+                spring to delay
+            }
+        springSet.addStartListener {
+            delayedSprings.forEach { (spring, delay) ->
+                if (delay == 0L) spring.start()
+                else waveHandler.postDelayed({ spring.start() }, delay)
+            }
+        }
+        return springSet
+    }
+
+    private val waveHandler by lazy { Handler(Looper.getMainLooper()) }
+
+    /** "Clear all" with apps locked in recents: only the other tasks are removed. */
+    private fun dismissUnlockedTasks(lockedTaskViews: List<TaskView>) {
+        val toRemove = recentsView.mUtils.taskViews.filter { it !in lockedTaskViews }
+        if (toRemove.isEmpty()) {
+            // Nothing to clear, still leave recents like a regular "Clear all".
+            if (!recentsView.mUtils.isInDesktopFirstMode()) recentsView.startHome()
+            InteractionJankMonitorWrapper.end(Cuj.CUJ_LAUNCHER_OVERVIEW_CLEAR_ALL)
+            return
+        }
+        // In the iOS stack, cards tucked under the front ones count as invisible but are
+        // revealed while the others fly away, so animate all of them.
+        val stack = RecentsStyle.get(recentsView.context) == RecentsStyle.STACK
+        // The locked cards fade with recents instead of sliding along with the home transition.
+        lockedTaskViews.forEach { it.animate().alpha(0f).setDuration(200).start() }
+        createClearAllSpringSet(toRemove.reversed()) { taskView ->
+                stack || recentsView.isTaskViewVisible(taskView)
+            }
+            .addEndListener {
+                with(recentsView) {
+                    finishRecentsAnimation(/* toHome */ true, /* shouldPip */ false) {
+                        val taskIds =
+                            toRemove.flatMap { taskView ->
+                                taskView.taskContainers.map { it.task.key.id }
+                            }
+                        uiHelperExecutor.execute {
+                            taskIds.forEach { activityManagerWrapper.removeTask(it) }
+                        }
+                        // The locked cards have faded out by now, so rearranging them can't be
+                        // seen; they are shown again once recents is hidden.
+                        val snapTo =
+                            currentPageTaskView?.takeIf { it in lockedTaskViews }
+                                ?: lockedTaskViews.first()
+                        toRemove.forEach {
+                            it.isBeingDismissed = false
+                            removeViewInLayout(it)
+                        }
+                        resetTaskVisuals()
+                        updateTaskSize()
+                        mUtils.updateChildTaskOrientations()
+                        updateScrollSynchronously()
+                        currentPage = indexOfChild(snapTo)
+                        dispatchScrollChanged()
+                        requestLayout()
+                        updateCurrentTaskActionsVisibility()
+                        // Relayout resets the task visuals; keep the faded locked cards hidden.
+                        recentsView.hideTasksUntilRecentsHidden(lockedTaskViews)
+                        // Like a regular "Clear all": go to the home screen, locked tasks stay.
                         if (!mUtils.isInDesktopFirstMode()) {
                             startHome()
                         }
@@ -667,6 +814,14 @@ constructor(
             .sortedBy { it.second }
 
     private fun willTaskBeVisibleAfterDismiss(taskView: TaskView, taskTranslation: Int): Boolean {
+        // In the card stack older cards peek out from under the current one, so all of them
+        // have to reflow, not only those within the carousel bounds.
+        if (
+            !recentsView.showAsGrid() &&
+                RecentsStyle.get(recentsView.context) == RecentsStyle.STACK
+        ) {
+            return true
+        }
         val screenStart = recentsView.pagedOrientationHandler.getPrimaryScroll(recentsView)
         val screenEnd =
             screenStart + recentsView.pagedOrientationHandler.getMeasuredSize(recentsView)
@@ -980,6 +1135,8 @@ constructor(
                 // Denote if any task has been dismissed for grid rebalancing.
                 mAnyTaskHasBeenDismissed = true
                 if (shouldRemoveTask && dismissedTaskView != null) {
+                    // A locked app swiped away by hand is no longer locked.
+                    RecentsLockedTasks.unlock(context, dismissedTaskView)
                     // Call removeTask API before removing the TaskView.
                     handleGroupTaskRemoval(dismissedTaskView)
                 }
@@ -1476,5 +1633,9 @@ constructor(
         private const val RECENTS_SCALE_SPRING_MULTIPLIER = 1000f
         private const val DEFAULT_DISMISS_THRESHOLD_FRACTION = 0.5f
         private const val SPEED_UP_STIFFNESS = 100_000f
+        private const val CLEAR_ALL_WAVE_STAGGER_MS = 110L
+        private const val CLEAR_ALL_WAVE_FADE_FRACTION = 0.6f
+        // Cards this many pages from the center are still visible in the iOS stack.
+        private const val CLEAR_ALL_WAVE_STACK_RANGE = 3
     }
 }

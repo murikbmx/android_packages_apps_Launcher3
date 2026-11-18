@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Application name -->
     <string name="lineageos_app_name" translatable="false">Trebuchet</string>
 
@@ -64,6 +64,8 @@
     <!-- Hide labels -->
     <string name="desktop_show_labels">Show icon labels on desktop</string>
     <string name="drawer_show_labels">Show icon labels in drawer</string>
+    <string name="drawer_two_line_labels">Two-line icon labels in drawer</string>
+    <string name="drawer_two_line_labels_summary">Wrap long app names onto a second line</string>
 
     <!-- Search bar -->
     <string name="pref_show_hotseat_qsb_title">Show search bar</string>
@@ -98,4 +100,39 @@
     <string name="trust_apps_relock_1_minute">After 1 minute</string>
     <string name="trust_apps_info_hidden">Hidden apps and their widgets are hidden from the drawer</string>
     <string name="trust_apps_info_protected">Protected apps require authentication whenever they are opened, their notifications are hidden and they are shown locked in Recents</string>
+
+    <!-- Recents style -->
+    <string name="pref_recents_style_title">Recent apps style</string>
+    <string-array name="pref_recents_style_entries" translatable="false">
+        <item>@string/pref_recents_style_aosp</item>
+        <item>@string/pref_recents_style_stack</item>
+        <item>@string/pref_recents_style_carousel</item>
+    </string-array>
+    <string-array name="pref_recents_style_values" translatable="false">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>
+    <string name="pref_recents_style_aosp" translatable="false">Default</string>
+    <string name="pref_recents_style_stack" translatable="false">iOS</string>
+    <string name="pref_recents_style_carousel">Carousel</string>
+
+    <!-- Animations -->
+    <string name="pref_icon_press_anim_title">Icon press animation</string>
+    <string name="pref_icon_press_anim_summary">Icons shrink slightly when touched and spring back</string>
+    <string name="pref_app_spring_anim_title">Spring app animations</string>
+    <string name="pref_app_spring_anim_summary">Apps open out of their icon on a spring curve and the icon bounces when the app closes</string>
+    <string name="pref_recents_spring_anim_title">Spring recent apps animations</string>
+    <string name="pref_recents_spring_anim_summary">Cards rise into place when recent apps open from home and settle softer after scrolling. Default style only</string>
+    <string name="pref_clear_all_wave_title">Clear all wave</string>
+    <string name="pref_clear_all_wave_summary">Recent apps fly away one by one when you clear all</string>
+    <string name="pref_edge_sidebar_title">Edge sidebar</string>
+    <string name="pref_edge_sidebar_summary">Thin handle on the left edge: swipe right for app shortcuts. On tablets apps open in floating windows</string>
+
+    <!-- Memory in recents -->
+    <string name="pref_recents_ram_info_title">Memory in recents</string>
+    <string name="pref_recents_ram_info_summary">Show free memory under the recent apps buttons and how much was freed after Clear all</string>
+    <string name="recents_ram_info"><xliff:g id="free">%1$s</xliff:g> GB free of <xliff:g id="total">%2$s</xliff:g> GB</string>
+    <string name="recents_ram_freed">Freed <xliff:g id="size">%1$s</xliff:g> GB</string>
+    <string name="recents_ram_freed_mb">Freed <xliff:g id="size">%1$d</xliff:g> MB</string>
 </resources>

@@ -13,9 +13,16 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="pref_themed_icons_title">Использовать значки темы в панели приложений</string>
     <string name="pref_themed_icons_summary">Использовать значки темы на главном экране</string>
+    <string name="pebble_shape_title">Галька</string>
+    <string name="vessel_shape_title">Сосуд</string>
+    <string name="pure_square_shape_title">Идеальный квадрат</string>
+    <string name="squircle_shape_title">Скругленный квадрат</string>
+    <string name="tapered_rect_shape_title">Конический прямоугольник</string>
+    <string name="teardrop_shape_title">Каплевидная форма</string>
+    <string name="rounded_rect_shape_title">Скругленный прямоугольник</string>
     <string name="pref_suggestions_title">Предложения</string>
     <string name="pref_suggestions_summary">Для панели приложений и предложений на главном экране</string>
     <string name="settings_lock_layout_title">Блокировка макета</string>
@@ -40,6 +47,10 @@
     <string name="settings_edit_widgets_error">Невозможно добавить виджеты на главный экран</string>
     <string name="desktop_show_labels">Отображать подписи значков на рабочем столе</string>
     <string name="drawer_show_labels">Отображать подписи значков в меню</string>
+    <string name="drawer_two_line_labels">Подписи значков в меню в две строки</string>
+    <string name="drawer_two_line_labels_summary">Переносить длинные названия приложений на вторую строку</string>
+    <string name="pref_show_hotseat_qsb_title">Показать строку поиска</string>
+    <string name="pref_show_hotseat_qsb_summary">В нижней части домашнего экрана</string>
     <string name="drawer_open_keyboard_title">Проведите для начала поиска</string>
     <string name="drawer_open_keyboard_summary">Открывать клавиатуру, когда панель приложений становится видимой</string>
     <string name="title_show_google_app">Показать приложение Google</string>
@@ -60,4 +71,23 @@
     <string name="trust_apps_relock_1_minute">Через 1 минуту</string>
     <string name="trust_apps_info_hidden">Скрытые приложения и их виджеты не отображаются в меню приложений</string>
     <string name="trust_apps_info_protected">Для открытия защищенных приложений всегда требуется аутентификация, их уведомления скрываются, а в недавних приложениях они показываются заблокированными</string>
+
+    <string name="pref_recents_style_title">Стиль недавних приложений</string>
+    <string name="pref_recents_style_carousel">Карусель</string>
+    <string name="pref_icon_press_anim_title">Анимация нажатия на значки</string>
+    <string name="pref_icon_press_anim_summary">Значки слегка сжимаются при касании и пружинят обратно</string>
+    <string name="pref_app_spring_anim_title">Пружинные анимации приложений</string>
+    <string name="pref_app_spring_anim_summary">Приложения раскрываются из значка по пружинной кривой, а при закрытии значок подпрыгивает</string>
+    <string name="pref_recents_spring_anim_title">Пружинные анимации недавних приложений</string>
+    <string name="pref_recents_spring_anim_summary">Карточки плавно поднимаются при открытии с рабочего стола и мягче останавливаются после прокрутки. Только для стиля «Default»</string>
+    <string name="pref_clear_all_wave_title">Волна при «Очистить всё»</string>
+    <string name="pref_clear_all_wave_summary">Карточки недавних приложений улетают по очереди при очистке</string>
+    <string name="pref_edge_sidebar_title">Боковая панель</string>
+    <string name="pref_edge_sidebar_summary">Тонкая ручка на левом краю: свайп вправо открывает ярлыки приложений. На планшетах приложения открываются в мини-окнах</string>
+
+    <string name="pref_recents_ram_info_title">Память в недавних</string>
+    <string name="pref_recents_ram_info_summary">Показывать свободную память под кнопками недавних и сколько освобождено после «Очистить всё»</string>
+    <string name="recents_ram_info">Свободно <xliff:g id="free">%1$s</xliff:g> ГБ из <xliff:g id="total">%2$s</xliff:g> ГБ</string>
+    <string name="recents_ram_freed">Освобождено <xliff:g id="size">%1$s</xliff:g> ГБ</string>
+    <string name="recents_ram_freed_mb">Освобождено <xliff:g id="size">%1$d</xliff:g> МБ</string>
 </resources>

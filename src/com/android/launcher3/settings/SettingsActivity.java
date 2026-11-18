@@ -40,7 +40,10 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
@@ -52,6 +55,7 @@ import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartScreenCallb
 import androidx.preference.PreferenceGroup;
 import androidx.preference.PreferenceGroup.PreferencePositionCallback;
 import androidx.preference.PreferenceScreen;
+import androidx.preference.TwoStatePreference;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.BuildConfig;
@@ -95,6 +99,8 @@ public class SettingsActivity extends FragmentActivity
     private static final String KEY_MINUS_ONE = "pref_enable_minus_one";
     private static final String SEARCH_PACKAGE = "com.google.android.googlequicksearchbox";
     public static final String KEY_TRUST_APPS = "pref_trust_apps";
+    private static final String KEY_EDGE_SIDEBAR = "pref_edge_sidebar";
+    private static final String SECURE_EDGE_SIDEBAR = "lineage_sidebar_enabled";
 
     private static final String KEY_SUGGESTIONS = "pref_suggestions";
     private static final String SUGGESTIONS_PACKAGE = "com.google.android.as";
@@ -106,6 +112,13 @@ public class SettingsActivity extends FragmentActivity
 
         setActionBar(findViewById(R.id.action_bar));
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        View rootView = findViewById(R.id.content_parent);
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (view, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         Intent intent = getIntent();
         if (intent.hasExtra(EXTRA_FRAGMENT_ROOT_KEY) || intent.hasExtra(EXTRA_FRAGMENT_ARGS)
@@ -371,6 +384,16 @@ public class SettingsActivity extends FragmentActivity
                         });
                         return true;
                     });
+                    return true;
+                case KEY_EDGE_SIDEBAR:
+                    // Stored in Settings.Secure, read by the SystemUI edge sidebar
+                    if (preference instanceof TwoStatePreference) {
+                        ((TwoStatePreference) preference).setChecked(Settings.Secure.getInt(
+                                getContext().getContentResolver(), SECURE_EDGE_SIDEBAR, 0) == 1);
+                    }
+                    preference.setOnPreferenceChangeListener((pref, newValue) ->
+                            Settings.Secure.putInt(getContext().getContentResolver(),
+                                    SECURE_EDGE_SIDEBAR, (boolean) newValue ? 1 : 0));
                     return true;
                 case SHOW_HOTSEAT_QSB_KEY:
                     return launcherApps != null &&

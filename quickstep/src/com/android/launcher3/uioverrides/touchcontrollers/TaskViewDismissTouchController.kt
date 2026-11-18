@@ -250,7 +250,8 @@ class TaskViewDismissTouchController<CONTAINER, T : BaseState<T>>(
         // Add a tiny bit of translation Z, so that it draws on top of other views. This is relevant
         // (e.g.) when we dismiss a task by sliding it upward: if there is a row of icons above, we
         // want the dragged task to stay above all other views.
-        taskBeingDragged.translationZ = 0.1f
+        // Keep it relative to the stack-style Z so the dragged card never drops below a neighbour.
+        taskBeingDragged.translationZ = taskBeingDragged.styleTranslationZ + TaskView.DISMISS_Z_LIFT
     }
 
     private fun getBoundedDisplacement(boundedDisplacement: Float, maxDisplacement: Float): Float =

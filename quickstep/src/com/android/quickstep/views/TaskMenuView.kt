@@ -240,6 +240,13 @@ constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int = 0) :
     }
 
     private fun animateOpen() {
+        // Tell the iOS stack where the menu ends so the newer card only moves as far as needed.
+        val recentsView = recentsViewContainer.getOverviewPanel<RecentsView<*, *>>()
+        val rvLoc = IntArray(2).also { recentsView.getLocationOnScreen(it) }
+        val dlLoc = IntArray(2).also { recentsViewContainer.dragLayer.getLocationOnScreen(it) }
+        recentsView.setStackMenuRight(
+            dlLoc[0] + translationX + layoutParams.width * scaleX - rvLoc[0]
+        )
         menuTranslationYBeforeOpen = translationY
         menuTranslationXBeforeOpen = translationX
         animateOpenOrClosed(closing = false)
@@ -268,6 +275,10 @@ constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int = 0) :
                         val animatedFraction = animation.animatedFraction
                         val openProgress = if (closing) (1 - animatedFraction) else animatedFraction
                         taskContainer?.updateMenuOpenProgress(openProgress)
+                        // iOS stack: move the newer cards out of the menu's way.
+                        recentsViewContainer
+                            .getOverviewPanel<RecentsView<*, *>>()
+                            .setStackMenuOpenProgress(openProgress)
                     }
                 }
         openCloseAnimator =
@@ -307,6 +318,7 @@ constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int = 0) :
 
     private fun closeComplete() {
         mIsOpen = false
+        recentsViewContainer.getOverviewPanel<RecentsView<*, *>>().setStackMenuOpenProgress(0f)
         recentsViewContainer.dragLayer.removeView(this)
         revealAnimator = null
     }

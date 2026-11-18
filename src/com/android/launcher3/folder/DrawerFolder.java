@@ -203,10 +203,10 @@ public class DrawerFolder extends Folder {
         return handled;
     }
 
-    /** The last app can't be removed, the folder is deleted from its dialog instead. */
+    /** Removing the last app deletes the folder. */
     private void updateRemoveButton() {
         // Invisible rather than gone to keep the folder name centered
-        mRemoveButton.setVisibility(getItemCount() > 1 ? VISIBLE : INVISIBLE);
+        mRemoveButton.setVisibility(getItemCount() > 0 ? VISIBLE : INVISIBLE);
     }
 
     private void setRemoveMode(boolean removeMode) {
@@ -239,12 +239,22 @@ public class DrawerFolder extends Folder {
     }
 
     private void removeApp(View icon) {
-        if (!(icon.getTag() instanceof ItemInfo info) || getItemCount() <= 1) return;
+        if (!(icon.getTag() instanceof ItemInfo info)) return;
+        Integer folderId = DrawerFolders.fromItemId(mInfo.id);
+        if (getItemCount() <= 1) {
+            // Removing the last app deletes the folder, its app goes back to the app list once
+            // the folder is closed
+            if (folderId != null) {
+                DrawerFolders.deleteFolder(getContext(), folderId, false /* notify */);
+                mAppsRemoved = true;
+            }
+            close(true);
+            return;
+        }
         icon.getOverlay().clear();
         icon.setOnClickListener(mActivityContext.getItemOnClickListener());
         removeFolderContent(true /* animate */, info);
 
-        Integer folderId = DrawerFolders.fromItemId(mInfo.id);
         if (folderId != null) {
             List<ComponentKey> apps = new ArrayList<>();
             for (ItemInfo item : mInfo.getContents()) {
@@ -256,9 +266,6 @@ public class DrawerFolder extends Folder {
         }
 
         updateRemoveButton();
-        if (getItemCount() <= 1) {
-            setRemoveMode(false);
-        }
     }
 
     /** Desaturates the app list behind the open folder. */

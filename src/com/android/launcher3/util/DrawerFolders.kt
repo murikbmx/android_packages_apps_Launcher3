@@ -132,10 +132,14 @@ object DrawerFolders {
         }
     }
 
-    /** Deletes the folder, its apps go back to the app list. */
+    /**
+     * Deletes the folder, its apps go back to the app list. [notify] is false when the caller
+     * calls [notifyChanged] later.
+     */
     @JvmStatic
-    fun deleteFolder(context: Context, id: Int) {
-        save(context, getFolders(context).filter { it.id != id })
+    @JvmOverloads
+    fun deleteFolder(context: Context, id: Int, notify: Boolean = true) {
+        save(context, getFolders(context).filter { it.id != id }, notify)
     }
 
     /** Calls [onChange] on the main thread whenever the folders change. */

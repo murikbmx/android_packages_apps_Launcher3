@@ -362,6 +362,18 @@ constructor(@ApplicationContext private val encryptedContext: Context) {
 
         @JvmField val SHOW_HOTSEAT_QSB = backedUpItem("pref_show_hotseat_qsb", false)
 
+        @JvmField val RECENTS_STYLE = backedUpItem("pref_recents_style", "2")
+
+        @JvmField val ICON_PRESS_ANIM = backedUpItem("pref_icon_press_anim", true)
+
+        @JvmField val APP_SPRING_ANIM = backedUpItem("pref_app_spring_anim", true)
+
+        @JvmField val RECENTS_SPRING_ANIM = backedUpItem("pref_recents_spring_anim", true)
+
+        @JvmField val CLEAR_ALL_WAVE = backedUpItem("pref_clear_all_wave", true)
+
+        @JvmField val RECENTS_RAM_INFO = backedUpItem("pref_recents_ram_info", true)
+
         @JvmStatic
         fun isHotseatQsbEnabled(context: Context): Boolean {
             return try {

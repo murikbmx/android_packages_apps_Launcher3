@@ -25,7 +25,6 @@ import androidx.annotation.NonNull;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiObject2;
 
-import com.android.launcher3.Flags;
 
 import java.util.List;
 
@@ -51,7 +50,7 @@ public abstract class AppIconMenu {
      */
     public AppIconMenuItem getMenuItem(int itemNumber) {
         final List<UiObject2> menuItems;
-        if (Flags.expandableLongPressMenu()) {
+        if (true /* expandableLongPressMenu */) {
             menuItems = mDeepShortcutsContainer.getChildren();
             assertTrue("Menu item number " + itemNumber + " is out of bounds. There are "
                             + menuItems.size() + " menu items.",

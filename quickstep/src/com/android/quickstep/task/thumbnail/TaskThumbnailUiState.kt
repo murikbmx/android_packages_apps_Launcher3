@@ -26,7 +26,8 @@ sealed class TaskThumbnailUiState {
 
     data class BackgroundOnly(@ColorInt val backgroundColor: Int) : TaskThumbnailUiState()
 
-    data class AppLocked(@ColorInt val backgroundColor: Int) : TaskThumbnailUiState()
+    data class AppLocked(@ColorInt val backgroundColor: Int, val snapshot: Snapshot? = null) :
+        TaskThumbnailUiState()
 
     data object LiveTile : TaskThumbnailUiState()
 

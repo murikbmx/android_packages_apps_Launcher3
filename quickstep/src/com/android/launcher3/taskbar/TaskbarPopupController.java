@@ -277,7 +277,7 @@ public class TaskbarPopupController implements TaskbarControllers.LoggableTaskba
                 /*itemInfo */ itemInfo,
                 /* updateIconUi */ false);
         container.setDeepShortcutDragHandler(new TaskbarDeepShortcutDragHandler(context));
-        if (Flags.expandableLongPressMenu()) {
+        if (true /* expandableLongPressMenu */) {
             List<PopupItem> systemShortcutPopups =
                     systemShortcuts.stream().map(shortcut -> new PopupItem(
                             shortcut.getIconResId(),

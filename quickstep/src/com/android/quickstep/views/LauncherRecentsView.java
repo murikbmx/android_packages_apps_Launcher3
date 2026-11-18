@@ -17,6 +17,7 @@ package com.android.quickstep.views;
 
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 
+import static com.android.launcher3.LauncherState.BACKGROUND_APP;
 import static com.android.launcher3.LauncherState.CLEAR_ALL_BUTTON;
 import static com.android.launcher3.LauncherState.OVERVIEW;
 import static com.android.launcher3.LauncherState.OVERVIEW_MODAL_TASK;
@@ -141,7 +142,16 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
 
     @Override
     public void onStateTransitionStart(LauncherState toState) {
+        // The state manager already reports toState here; the stable state is where we come from.
+        LauncherState fromState = mContainer.getStateManager().getCurrentStableState();
         setOverviewStateEnabled(toState.isRecentsViewVisible);
+        if (!toState.isRecentsViewVisible) {
+            resetRecentsStyle();
+            cancelCardsEntry();
+        } else if (toState == OVERVIEW && !fromState.isRecentsViewVisible
+                && fromState != BACKGROUND_APP && getRunningTaskView() == null) {
+            animateCardsEntry();
+        }
 
         if (toState.displayOverviewTasksAsGrid(mContainer.getDeviceProfile())) {
             setOverviewGridEnabled(true);
@@ -167,6 +177,12 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
     @Override
     public void onStateTransitionComplete(LauncherState finalState) {
         mUtils.onStateTransitionComplete(finalState);
+        if (finalState == OVERVIEW) {
+            animateRecentsStyleIn();
+        }
+        if (!finalState.isRecentsViewVisible) {
+            onRecentsHidden();
+        }
         DesktopVisibilityController.INSTANCE.get(mContainer).onLauncherStateChanged(
                 mContainer.getDisplayId(), finalState);
         if (!finalState.displayOverviewTasksAsGrid(mContainer.getDeviceProfile())) {

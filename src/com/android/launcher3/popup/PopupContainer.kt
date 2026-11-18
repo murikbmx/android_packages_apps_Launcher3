@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.ComposeView
 import com.android.launcher3.AbstractFloatingView
 import com.android.launcher3.DragSource
 import com.android.launcher3.DropTarget.DragObject
-import com.android.launcher3.Flags
 import com.android.launcher3.Launcher
 import com.android.launcher3.LauncherPrefs
 import com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_CUSTOM_VIEW
@@ -122,7 +121,7 @@ open class PopupContainer<T : ActivityContext>(
         activityContext: ActivityContext,
         itemView: View,
     ) {
-        if (Flags.expandableLongPressMenu()) {
+        if (true /* expandableLongPressMenu */) {
             showComposePopup(
                 systemShortcuts =
                     systemShortcuts.map { popupData ->

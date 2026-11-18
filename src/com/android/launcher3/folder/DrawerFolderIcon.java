@@ -73,8 +73,11 @@ public class DrawerFolderIcon extends FolderIcon {
         Paint.FontMetrics fm = mFolderName.getPaint().getFontMetrics();
         int textHeight = (int) Math.ceil(fm.bottom - fm.top);
 
+        // App icons reserve room for a second label line when two-line labels are enabled
+        int textLines = dp.inv.enableTwoLinesInAllApps ? 2 : 1;
+
         int appIconTop = (MeasureSpec.getSize(heightMeasureSpec) - appIconSize - drawablePadding
-                - textHeight) / 2;
+                - textHeight * textLines) / 2;
         int paddingTop = appIconTop + (appIconSize - previewAreaSize) / 2;
         setPadding(getPaddingLeft(), paddingTop, getPaddingRight(), getPaddingBottom());
         ((FrameLayout.LayoutParams) mFolderName.getLayoutParams()).topMargin =

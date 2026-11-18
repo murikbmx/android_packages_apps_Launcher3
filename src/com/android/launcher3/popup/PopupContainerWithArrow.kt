@@ -193,7 +193,7 @@ private constructor(
         // All views are added. Animate layout from now on.
         layoutTransition = LayoutTransition()
 
-        if (Flags.expandableLongPressMenu()) {
+        if (true /* expandableLongPressMenu */) {
             // Load the shortcuts on a background thread and update the container as it animates.
             Executors.MODEL_EXECUTOR.handler.postAtFrontOfQueue(
                 PopupPopulator.createUpdateRunnable(
@@ -444,7 +444,7 @@ private constructor(
 
             val container =
                 create<Launcher>(context = icon.context, originalView = icon, itemInfo = item)
-            if (Flags.expandableLongPressMenu()) {
+            if (true /* expandableLongPressMenu */) {
                 container.showComposePopup(emptyList(), deepShortcutCount)
             } else {
                 container.populateAndShowRows(deepShortcutCount, emptyList())

@@ -21,7 +21,6 @@ import android.widget.TextView;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiObject2;
 
-import com.android.launcher3.Flags;
 import com.android.launcher3.testing.shared.TestProtocol;
 
 /**
@@ -37,7 +36,7 @@ public abstract class AppIconMenuItem extends Launchable {
      * Returns the visible text of the menu item.
      */
     public String getText() {
-        if (Flags.expandableLongPressMenu()) {
+        if (true /* expandableLongPressMenu */) {
             final UiObject2 textView = mLauncher.waitForObjectInContainer(
                     mObject, By.clazz(TextView.class));
             return textView.getText();

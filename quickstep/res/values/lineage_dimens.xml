@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Gap between the recents action buttons and the memory line -->
+    <dimen name="recents_ram_info_spacing">12dp</dimen>
+</resources>

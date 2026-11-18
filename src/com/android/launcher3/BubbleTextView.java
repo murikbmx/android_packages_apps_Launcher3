@@ -86,6 +86,7 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import com.android.launcher3.accessibility.BaseAccessibilityDelegate;
 import com.android.launcher3.anim.AnimatedFloat;
+import com.android.launcher3.anim.IconPressAnimations;
 import com.android.launcher3.apppairs.AppPairIcon;
 import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.dragndrop.DragOptions.PreDragCondition;
@@ -716,7 +717,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         return mDisplay == DISPLAY_WORKSPACE || mDisplay == DISPLAY_FOLDER
                 || mDisplay == DISPLAY_TASKBAR
                 || (mThemeAllAppsIcons
-                        && (mDisplay == DISPLAY_ALL_APPS || mDisplay == DISPLAY_PREDICTION_ROW));
+                        && (mDisplay == DISPLAY_ALL_APPS || mDisplay == DISPLAY_PREDICTION_ROW
+                                || mDisplay == DISPLAY_SEARCH_RESULT_APP_ROW));
     }
 
     /**
@@ -819,6 +821,17 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     public void refreshDrawableState() {
         if (!mIgnorePressedStateChange) {
             super.refreshDrawableState();
+        }
+    }
+
+    @Override
+    protected void drawableStateChanged() {
+        FastBitmapDrawable icon = mIcon;
+        boolean wasPressed = icon != null && icon.isPressed;
+        super.drawableStateChanged();
+        if (icon != null && icon == mIcon && icon.isPressed != wasPressed
+                && mDisplay != DISPLAY_TASKBAR && IconPressAnimations.isEnabled(getContext())) {
+            IconPressAnimations.animatePressedChanged(icon);
         }
     }
 
@@ -1123,8 +1136,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         int height = MeasureSpec.getSize(heightMeasureSpec);
         if (mCenterVertically) {
             Paint.FontMetrics fm = getPaint().getFontMetrics();
+            // Reserve room for both lines when two-line labels are on, so the icon and label
+            // stay centered in the cell whether the label wraps or not.
+            int lineCount = Math.max(getCellSpecMaxTextLineCount(), shouldUseTwoLine() ? 2 : 1);
             int cellHeightPx = mIconSize + getCompoundDrawablePadding() +
-                    (int) Math.ceil(fm.bottom - fm.top) * getCellSpecMaxTextLineCount();
+                    (int) Math.ceil(fm.bottom - fm.top) * lineCount;
             setPadding(getPaddingLeft(), (height - cellHeightPx) / 2, getPaddingRight(),
                     getPaddingBottom());
         }
@@ -1329,7 +1345,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                     newString.append(NEW_LINE).append(lastCharacters);
                     StaticLayout staticLayout = new StaticLayout(newString, paint, limitedWidth,
                             ALIGN_NORMAL, spacingMultiplier, spacingExtra, false);
-                    if (staticLayout.getHeight() < limitedHeight) {
+                    // Only the first two lines are shown; if the remainder doesn't fit on the
+                    // second line it gets ellipsized, so only those two lines need to fit.
+                    int twoLineHeight = staticLayout.getLineBottom(
+                            Math.min(1, staticLayout.getLineCount() - 1));
+                    if (twoLineHeight <= limitedHeight) {
                         return newString.toString();
                     }
                 }
