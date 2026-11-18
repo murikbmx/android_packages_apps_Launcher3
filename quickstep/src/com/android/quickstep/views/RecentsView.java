@@ -5937,6 +5937,17 @@ public abstract class RecentsView<
 
     /** Called once overview has settled: finishes the live tile and fully applies the style. */
     public void animateRecentsStyleIn() {
+        if (RecentsStyle.get(getContext()) == RecentsStyle.CAROUSEL && !showAsGrid()) {
+            // The live tile isn't scaled with its card: replace it with a screenshot.
+            mRecentsStyleSettled = true;
+            if (mRecentsAnimationController != null) {
+                switchToScreenshot(() -> finishRecentsAnimation(true /* toHome */,
+                        false /* shouldPip */, this::applyRecentsStyle));
+            } else {
+                applyRecentsStyle();
+            }
+            return;
+        }
         if (RecentsStyle.get(getContext()) != RecentsStyle.STACK || showAsGrid()) {
             setRecentsStyleProgress(0f);
             return;
@@ -5993,7 +6004,7 @@ public abstract class RecentsView<
 
     private void finishLiveTileForStyle() {
         if (mRecentsStyleSettled && mRecentsAnimationController != null
-                && RecentsStyle.get(getContext()) == RecentsStyle.STACK) {
+                && RecentsStyle.get(getContext()) != RecentsStyle.AOSP) {
             switchToScreenshot(() -> finishRecentsAnimation(true /* toHome */,
                     false /* shouldPip */, null));
         }
@@ -6043,7 +6054,8 @@ public abstract class RecentsView<
 
     /** Called by task views when their dismiss (reflow) translation changes. */
     public void onTaskDismissTranslationChanged() {
-        if (mRecentsStyleProgress > 0f) {
+        if (mRecentsStyleProgress > 0f
+                || RecentsStyle.get(getContext()) == RecentsStyle.CAROUSEL) {
             applyRecentsStyle();
         }
     }
