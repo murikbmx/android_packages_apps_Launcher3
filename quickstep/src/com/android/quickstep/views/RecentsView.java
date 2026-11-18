@@ -5937,7 +5937,7 @@ public abstract class RecentsView<
 
     /** Called once overview has settled: finishes the live tile and fully applies the style. */
     public void animateRecentsStyleIn() {
-        if (RecentsStyle.get(getContext()) == RecentsStyle.AOSP || showAsGrid()) {
+        if (RecentsStyle.get(getContext()) != RecentsStyle.STACK || showAsGrid()) {
             setRecentsStyleProgress(0f);
             return;
         }
@@ -5993,7 +5993,7 @@ public abstract class RecentsView<
 
     private void finishLiveTileForStyle() {
         if (mRecentsStyleSettled && mRecentsAnimationController != null
-                && RecentsStyle.get(getContext()) != RecentsStyle.AOSP) {
+                && RecentsStyle.get(getContext()) == RecentsStyle.STACK) {
             switchToScreenshot(() -> finishRecentsAnimation(true /* toHome */,
                     false /* shouldPip */, null));
         }
@@ -6080,11 +6080,36 @@ public abstract class RecentsView<
         if (mRecentsStyleProgress > 0f) applyRecentsStyle();
     }
 
+    // Carousel: side cards shrink with their distance from the screen center.
+    private static final float CAROUSEL_SIDE_SCALE = 0.86f;
+
+    private void applyCarouselStyle(List<TaskView> taskViews) {
+        float viewCenterX = getScrollX() + getWidth() / 2f;
+        for (TaskView tv : taskViews) {
+            float w = tv.getWidth() + getPageSpacing();
+            if (w <= 0) continue;
+            float left = tv.getLeft() + tv.getPrimaryDismissTranslationProperty().get(tv);
+            float d = Math.abs((left + tv.getWidth() / 2f) - viewCenterX) / w;
+            float t = Math.min(d, 1f);
+            // Smoothstep so the size settles gently near the center.
+            t = t * t * (3f - 2f * t);
+            float scale = 1f - (1f - CAROUSEL_SIDE_SCALE) * t;
+            float z = tv.isBeingDismissed() ? TaskView.DISMISS_Z_LIFT : 0f;
+            tv.setStyleTransform(0f, 0f, scale, z);
+            tv.setStyleAlpha(1f);
+        }
+    }
+
     private void applyRecentsStyle() {
         List<TaskView> taskViews = new ArrayList<>();
         for (TaskView tv : getTaskViews()) taskViews.add(tv);
         float f = mRecentsStyleProgress;
-        if (f <= 0f || RecentsStyle.get(getContext()) == RecentsStyle.AOSP || taskViews.isEmpty()) {
+        int style = RecentsStyle.get(getContext());
+        if (style == RecentsStyle.CAROUSEL && !showAsGrid()) {
+            applyCarouselStyle(taskViews);
+            return;
+        }
+        if (f <= 0f || style != RecentsStyle.STACK || taskViews.isEmpty()) {
             for (TaskView tv : taskViews) {
                 tv.setStyleTransform(0f, 0f, 1f, 0f);
                 tv.setStyleAlpha(1f);
@@ -6199,6 +6224,7 @@ public abstract class RecentsView<
     }
 
     protected void dispatchScrollChanged() {
+        if (RecentsStyle.get(getContext()) == RecentsStyle.CAROUSEL) applyRecentsStyle();
         runActionOnRemoteHandles(remoteTargetHandle ->
                 remoteTargetHandle.getTaskViewSimulator().setScroll(getScrollOffset()));
         for (int i = mScrollListeners.size() - 1; i >= 0; i--) {

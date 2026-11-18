@@ -26,11 +26,16 @@ object RecentsStyle {
     const val AOSP = 2
     /** Overlapping card stack. */
     const val STACK = 3
+    /** Default carousel where the centered card is larger than its neighbours. */
+    const val CAROUSEL = 4
 
     @JvmStatic
     fun get(context: Context): Int =
-        if (LauncherPrefs.get(context).get(LauncherPrefs.RECENTS_STYLE).toIntOrNull() == STACK) STACK
-        else AOSP
+        when (LauncherPrefs.get(context).get(LauncherPrefs.RECENTS_STYLE).toIntOrNull()) {
+            STACK -> STACK
+            CAROUSEL -> CAROUSEL
+            else -> AOSP
+        }
 
     /** Spring entry / scroll animations, only used by the default style. */
     @JvmStatic
